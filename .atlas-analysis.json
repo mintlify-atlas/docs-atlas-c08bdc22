@@ -1,0 +1,119 @@
+{
+  "projectType": "frontend",
+  "projectName": "DAWNO",
+  "projectDescription": "Professional PAWN IDE for SA-MP/open.mp - A modern, feature-rich alternative to the classic Pawno editor.",
+  "theme": "aspen",
+  "primaryColor": "#5B9BD5",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "guide/interface-overview",
+              "guide/editor-features",
+              "guide/file-management",
+              "guide/git-integration",
+              "guide/server-management",
+              "guide/encoding-support",
+              "guide/keyboard-shortcuts"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/monaco-editor",
+              "features/git-source-control",
+              "features/server-integration",
+              "features/discord-presence",
+              "features/internationalization",
+              "features/auto-save"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/settings",
+              "configuration/server-config",
+              "configuration/file-associations"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/architecture",
+              "development/getting-started",
+              "development/building",
+              "development/contributing"
+            ]
+          },
+          {
+            "group": "Component Reference",
+            "pages": [
+              "components/overview",
+              "components/editor-panel",
+              "components/sidebar",
+              "components/tabs-bar",
+              "components/status-bar",
+              "components/modals"
+            ]
+          },
+          {
+            "group": "Hooks",
+            "pages": [
+              "hooks/use-editor-bridge",
+              "hooks/use-file-operations",
+              "hooks/use-settings",
+              "hooks/use-discord-rpc",
+              "hooks/use-keyboard-shortcuts"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Modern Monaco Editor with syntax highlighting and intelligent code completion",
+    "Native Git source control GUI with visual diffs and commit management",
+    "Integrated SA-MP/open.mp server manager with live console tracking",
+    "Discord Rich Presence integration showing current project and file",
+    "Comprehensive encoding support including Turkish (Windows-1254) and 13+ languages",
+    "Auto-save functionality with configurable delay",
+    "VS Code-inspired interface with dark mode support"
+  ],
+  "publicApiSurface": [
+    "EditorPanel - Main Monaco editor component",
+    "Sidebar - File explorer and source control navigation",
+    "TabsBar - Multi-file tab management",
+    "StatusBar - Editor status and information display",
+    "WelcomeScreen - Initial landing page",
+    "OutputPanel - Server console and output display",
+    "useEditorBridge - IPC communication with Electron main process",
+    "useFileOperations - File system operations hook",
+    "useSettings - Application settings management",
+    "useDiscordRpc - Discord Rich Presence integration",
+    "useFolderWatcher - File system watching and auto-refresh",
+    "useKeyboardShortcuts - Keyboard shortcut bindings",
+    "SettingsModal - Application settings interface",
+    "ServerModal - Server management interface",
+    "ConfigModal - Server configuration editor",
+    "EncodingPicker - Character encoding selector"
+  ]
+}
