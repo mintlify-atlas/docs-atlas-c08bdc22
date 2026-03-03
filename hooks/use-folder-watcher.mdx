@@ -1,0 +1,217 @@
+---
+title: useFolderWatcher
+description: Hook for watching file system changes and reloading modified files
+---
+
+The `useFolderWatcher` hook monitors the current folder for file system changes and automatically reloads files that are modified externally.
+
+## Overview
+
+This hook:
+
+- Watches the current folder for file changes
+- Detects when open files are modified by external editors
+- Automatically reloads clean (non-dirty) files
+- Warns when dirty files are modified externally
+- Notifies when files are deleted or moved
+
+## Hook signature
+
+```typescript
+export function useFolderWatcher(): void
+```
+
+### Returns
+
+This hook doesn't return any value. It operates as a side-effect hook.
+
+## Implementation details
+
+### Context dependencies
+
+The hook uses the following from `EditorContext`:
+
+- `currentFolderPath` - Path to the currently open folder
+- `appendOutput()` - Function to add messages to output panel
+- `tabs` - Array of open file tabs
+- `updateTab()` - Function to update tab state
+- `currentEncoding` - Current file encoding
+- `isProgrammaticUpdate` - Ref to prevent dirty state on programmatic changes
+- `monacoRef` - Reference to Monaco API
+
+### File change detection
+
+The hook subscribes to file system events from the main process:
+
+```typescript
+const handleFolderChange = async (data: { eventType: string; filename: string }) => {
+    const normalizedFilename = data.filename.replace(/\\/g, '/');
+    const fullPath = `${currentFolderPath}/${normalizedFilename}`.toLowerCase();
+    
+    // Find affected tab
+    const affectedTab = tabs.find(t => 
+        t.path?.replace(/\\/g, '/').toLowerCase() === fullPath
+    );
+    // ...
+};
+```
+
+### Reload behavior
+
+**Clean files** (not dirty):
+
+1. Waits 150ms to ensure file write is complete
+2. Reads new content from disk
+3. Compares with current content
+4. If different, updates the model using `pushEditOperations()`
+5. Shows info message: "File reloaded from disk."
+
+```typescript
+if (!affectedTab.dirty) {
+    isProgrammaticUpdate.current = true;
+    
+    model.pushEditOperations(
+        [],
+        [{
+            range: model.getFullModelRange(),
+            text: content
+        }],
+        () => null
+    );
+    
+    isProgrammaticUpdate.current = false;
+    appendOutput(`File "${affectedTab.name}" reloaded from disk.`, 'info');
+}
+```
+
+**Dirty files** (unsaved changes):
+
+- Does NOT reload (preserves user changes)
+- Shows warning: "File was modified externally. You have unsaved changes."
+
+**Deleted files**:
+
+- Detects when file no longer exists
+- Shows warning: "File was deleted or moved."
+
+### Path normalization
+
+All paths are normalized to forward slashes and compared in lowercase:
+
+```typescript
+const normalizedFilename = data.filename.replace(/\\/g, '/');
+const fullPath = `${currentFolderPath.replace(/\\/g, '/')}/${normalizedFilename}`.toLowerCase();
+const tabPath = t.path.replace(/\\/g, '/').toLowerCase();
+```
+
+This ensures consistent matching across Windows and Unix-style paths.
+
+### Ref usage for tabs
+
+The hook uses a ref to access the latest tabs state inside the event handler:
+
+```typescript
+const tabsRef = useRef(tabs);
+
+useEffect(() => {
+    tabsRef.current = tabs;
+}, [tabs]);
+```
+
+This prevents stale closures in the async `handleFolderChange` callback.
+
+### Cleanup
+
+The hook properly unsubscribes from file system events when the component unmounts or the folder changes:
+
+```typescript
+const unsubscribe = window.api.onFolderChange(handleFolderChange);
+
+return () => {
+    if (typeof unsubscribe === 'function') unsubscribe();
+};
+```
+
+## Use cases
+
+**External editor workflow**:
+
+1. User opens a PAWN file in DAWNO
+2. User also opens the same file in VS Code to make quick edits
+3. User saves in VS Code
+4. DAWNO detects the change and automatically reloads the file
+5. User sees the updated content in DAWNO immediately
+
+**Git checkout scenario**:
+
+1. User has files open in DAWNO
+2. User runs `git checkout other-branch` in terminal
+3. Files are modified by Git
+4. DAWNO detects changes and reloads clean files
+5. Dirty files show a warning to prevent data loss
+
+**Build tool integration**:
+
+1. User has a preprocessor that generates `.pwn` files
+2. Build tool writes output files
+3. DAWNO detects new content and reloads
+4. User sees generated code immediately
+
+## Behavior examples
+
+**Example 1: Clean file modified externally**
+
+```typescript
+// File: gamemode.pwn is open, no unsaved changes
+// External editor saves new content
+// Output panel shows:
+"File 'gamemode.pwn' reloaded from disk." (info)
+```
+
+**Example 2: Dirty file modified externally**
+
+```typescript
+// File: gamemode.pwn is open with unsaved changes
+// External editor saves new content
+// Output panel shows:
+"File 'gamemode.pwn' was modified externally. You have unsaved changes." (warning)
+// File content is NOT reloaded (preserves user edits)
+```
+
+**Example 3: File deleted externally**
+
+```typescript
+// File: gamemode.pwn is open
+// User deletes file in Windows Explorer
+// Output panel shows:
+"File 'gamemode.pwn' was deleted or moved." (warning)
+// Tab remains open with current content
+```
+
+## Technical notes
+
+**Why 150ms delay?**
+
+The 150ms delay ensures the file write operation is fully complete before reading. Some editors write files in multiple chunks, and reading too early can result in partial content.
+
+**Why `pushEditOperations()` instead of `setValue()`?**
+
+`pushEditOperations()` is more stable and maintains better undo/redo history. It's the recommended way to programmatically modify Monaco models.
+
+**Why check `!affectedTab.dirty`?**
+
+Reloading a dirty file would discard unsaved user changes, causing data loss. The hook only reloads clean files to preserve user work.
+
+## Related hooks
+
+- [useEditorBridge](/hooks/use-editor-bridge) - Handles file save operations
+- [useFileOperations](/hooks/use-file-operations) - Opens and saves files
+- [useSettings](/hooks/use-settings) - Manages encoding settings
+
+<Note>
+  The useFolderWatcher hook only activates when a folder is open. Opening individual files without a folder does not trigger file watching.
+</Note>
+
+<Warning>
+  If you have unsaved changes and an external editor modifies the same file, your changes are preserved. You must manually reload or merge the changes to incorporate external edits.
+</Warning>

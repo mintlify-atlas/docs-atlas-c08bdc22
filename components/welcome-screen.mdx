@@ -1,0 +1,117 @@
+---
+title: WelcomeScreen
+description: Initial landing page component displayed when no files are open
+---
+
+The `WelcomeScreen` component provides the initial landing experience when DAWNO starts without any open files or folders.
+
+## Overview
+
+`WelcomeScreen` is displayed when:
+
+- DAWNO starts with no files open
+- All tabs are closed
+- No folder is currently open
+
+It provides quick actions to start working:
+
+- Create a new file
+- Open an existing file
+- Open a folder/workspace
+
+## Component structure
+
+```typescript
+export default function WelcomeScreen()
+```
+
+### Props
+
+This component takes no props. It uses `useFileOperations` and `useLanguage` hooks internally.
+
+## Implementation details
+
+### Context dependencies
+
+The component uses:
+
+- `useFileOperations()` - Provides `newFile()`, `openFile()`, and `openFolder()` functions
+- `useLanguage()` - Provides internationalized text via `t.welcome`
+
+### UI elements
+
+**Logo**: Displays the DAWNO icon (256x256px) from `./assets/icon-256.png`
+
+**Title and subtitle**: Shows "DAWNO" heading and localized subtitle
+
+**Action buttons**: Three primary actions:
+
+1. **New File** (Ctrl+N) - Creates a new untitled file
+2. **Open File** (Ctrl+O) - Opens file picker dialog
+3. **Open Folder** - Opens folder picker dialog
+
+**Keyboard shortcut tip**: Dynamic text with `<kbd>` elements showing shortcuts:
+
+```typescript
+const KBD_TOKENS = ['Ctrl+N', 'Ctrl+O', 'F5', 'Ctrl+G', 'Ctrl+H'];
+```
+
+The tip text is parsed from the translation string, replacing placeholders like `{ctrl_n}` with actual keyboard elements:
+
+```typescript
+const tipParts = t.welcome.tip
+    .replace('{ctrl_n}', '||Ctrl+N||')
+    .replace('{ctrl_o}', '||Ctrl+O||')
+    .replace('{f5}', '||F5||')
+    .replace('{ctrl_g}', '||Ctrl+G||')
+    .replace('{ctrl_h}', '||Ctrl+H||')
+    .split('||');
+```
+
+## Styling
+
+CSS classes:
+
+- `.welcome-screen` - Main container
+- `.welcome-logo` - Logo wrapper
+- `.welcome-actions` - Button container
+- `.welcome-btn` - Action button
+- `.welcome-btn.primary` - Primary action (New File)
+- `.welcome-tip` - Keyboard shortcut hint
+
+## User interaction
+
+**Button clicks**: Each button triggers the corresponding file operation:
+
+```typescript
+<button onClick={() => newFile()}>New File</button>
+<button onClick={() => openFile()}>Open File</button>
+<button onClick={() => openFolder()}>Open Folder</button>
+```
+
+**Visual state**: The welcome screen is automatically hidden when:
+
+- A file is opened (tab created)
+- A folder is opened (sidebar shows explorer)
+
+## Internationalization
+
+All text is fully localized through the `t.welcome` translation namespace:
+
+- `t.welcome.subtitle` - Main subtitle text
+- `t.welcome.newFile` - New file button label
+- `t.welcome.openFile` - Open file button label
+- `t.welcome.openFolder` - Open folder button label
+- `t.welcome.tip` - Keyboard shortcut tip with placeholders
+
+Supports all 13 languages configured in DAWNO.
+
+## Related components
+
+- [EditorPanel](/components/editor-panel) - Shown when files are open
+- [Sidebar](/components/sidebar) - Shown when folder is open
+- [Component overview](/components/overview) - Architecture and state management
+
+<Note>
+  The WelcomeScreen is purely presentational and stateless. It delegates all actions to `useFileOperations` hooks, ensuring consistency with keyboard shortcuts and menu commands.
+</Note>

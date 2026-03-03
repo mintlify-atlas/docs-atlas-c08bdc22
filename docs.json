@@ -84,6 +84,8 @@
               "components/sidebar",
               "components/tabs-bar",
               "components/status-bar",
+              "components/output-panel",
+              "components/welcome-screen",
               "components/modals"
             ]
           },
@@ -94,7 +96,8 @@
               "hooks/use-file-operations",
               "hooks/use-settings",
               "hooks/use-discord-rpc",
-              "hooks/use-keyboard-shortcuts"
+              "hooks/use-keyboard-shortcuts",
+              "hooks/use-folder-watcher"
             ]
           }
         ]

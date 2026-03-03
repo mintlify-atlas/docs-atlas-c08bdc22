@@ -1,0 +1,234 @@
+---
+title: OutputPanel
+description: Resizable console panel for compilation output and server logs
+---
+
+The `OutputPanel` component displays compilation output, server console logs, and other system messages in a resizable panel at the bottom of the IDE.
+
+## Overview
+
+`OutputPanel` provides:
+
+- Real-time display of compilation output
+- Server console log streaming
+- File operation messages (save, reload, etc.)
+- Resizable height with drag handle
+- Collapse/expand functionality
+- Clear output action
+- Clickable file paths in error messages
+
+## Component structure
+
+```typescript
+export default function OutputPanel()
+```
+
+### Props
+
+This component takes no props. It reads state from `EditorContext`.
+
+## Implementation details
+
+### Context dependencies
+
+The component uses the following from `EditorContext`:
+
+- `outputLines` - Array of output messages to display
+- `clearOutput()` - Function to clear all output
+- `outputCollapsed` - Whether panel is collapsed
+- `setOutputCollapsed()` - Function to toggle collapse state
+- `editorRef` - Reference to Monaco editor for layout sync
+
+### Height constraints
+
+```typescript
+const MIN_HEIGHT = 80;    // Minimum panel height
+const MAX_HEIGHT = 600;   // Maximum panel height
+const DEFAULT_HEIGHT = 180; // Default height
+```
+
+## Key features
+
+### Resizable panel
+
+The panel can be resized by dragging the top edge:
+
+**Drag behavior**:
+
+1. Mouse down on resizer starts drag
+2. Creates overlay to block Monaco events during resize
+3. Tracks mouse position in real-time
+4. Calculates new height: `window.innerHeight - e.clientY - 24` (24px = StatusBar height)
+5. Clamps height between MIN_HEIGHT and MAX_HEIGHT
+6. Directly mutates DOM for instant feedback
+7. Calls `editorRef.current.layout()` to sync Monaco immediately
+
+**Critical performance fix**: The synchronous `layout()` call prevents the "laggy" feel caused by Monaco's asynchronous ResizeObserver:
+
+```typescript
+// Synchronous direct DOM mutation
+panelRef.current.style.height = `${clampedHeight}px`;
+
+// CRITICAL: Force Monaco layout in same paint cycle
+if (editorRef.current) {
+    editorRef.current.layout();
+}
+```
+
+**Double-click resizer**: Resets panel to default height (180px)
+
+### Output line types
+
+Each output line has a type that affects styling:
+
+```typescript
+type OutputLine = {
+  id: number;
+  text: string;
+  type: 'info' | 'error' | 'warning' | 'success';
+  clickable?: boolean;
+  filePath?: string | null;
+};
+```
+
+**Styling by type**:
+
+- `info` - Standard gray text
+- `error` - Red text for errors
+- `warning` - Yellow/orange text for warnings
+- `success` - Green text for successful operations
+
+### Clickable file paths
+
+Error messages can include clickable file paths:
+
+```typescript
+<div
+    className={`output-line ${line.type} ${line.clickable ? 'clickable' : ''}`}
+    onClick={() => {
+        if (line.clickable && line.filePath) {
+            document.dispatchEvent(
+                new CustomEvent('dawno:open-file', { detail: line.filePath })
+            );
+        }
+    }}
+>
+    {line.text}
+</div>
+```
+
+Clicking a clickable line dispatches a custom event that opens the file in the editor.
+
+### Auto-scroll behavior
+
+The panel automatically scrolls to the bottom when new output arrives:
+
+```typescript
+useEffect(() => {
+    if (bodyRef.current && !outputCollapsed) {
+        bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+    }
+}, [outputLines, outputCollapsed]);
+```
+
+### Header actions
+
+The panel header provides two actions:
+
+**Clear button**: Removes all output lines
+
+```typescript
+<button onClick={clearOutput}>
+    <svg><!-- trash icon --></svg>
+</button>
+```
+
+**Collapse/expand button**: Toggles panel visibility
+
+```typescript
+<button onClick={() => setOutputCollapsed(!outputCollapsed)}>
+    <svg>
+        {outputCollapsed
+            ? <polyline points="18 15 12 9 6 15" /> // chevron up
+            : <polyline points="6 9 12 15 18 9" />   // chevron down
+        }
+    </svg>
+</button>
+```
+
+**Header click**: Clicking the header also toggles collapse state
+
+### Empty state
+
+When no output is present, shows a placeholder:
+
+```typescript
+{outputLines.length === 0
+    ? <span className="output-placeholder">{t.output.placeholder}</span>
+    : outputLines.map(/* render lines */)}
+```
+
+## Styling
+
+CSS classes:
+
+- `.output-panel` - Main container
+- `.output-panel.collapsed` - Collapsed state
+- `.output-resizer` - Drag handle
+- `.output-header` - Header bar
+- `.output-title` - Title with icon
+- `.output-actions` - Action buttons container
+- `.output-action-btn` - Individual action button
+- `.output-body` - Scrollable content area
+- `.output-line` - Individual output line
+- `.output-line.info` - Info line styling
+- `.output-line.error` - Error line styling
+- `.output-line.warning` - Warning line styling
+- `.output-line.success` - Success line styling
+- `.output-line.clickable` - Clickable line cursor
+- `.output-placeholder` - Empty state text
+
+## Internationalization
+
+All UI text is localized through `t.output`:
+
+- `t.output.title` - Panel title ("Output")
+- `t.output.clear` - Clear button tooltip
+- `t.output.expand` - Expand button tooltip
+- `t.output.collapse` - Collapse button tooltip
+- `t.output.placeholder` - Empty state message
+
+## Usage examples
+
+**Adding output from compilation**:
+
+```typescript
+appendOutput('Compiling gamemode.pwn...', 'info');
+appendOutput('Error: undefined symbol "player"', 'error');
+appendOutput('Compilation failed with 1 error', 'error');
+```
+
+**Adding clickable error with file path**:
+
+```typescript
+appendOutput(
+    'Error in gamemode.pwn:123',
+    'error',
+    true,  // clickable
+    'C:/Server/gamemodes/gamemode.pwn'
+);
+```
+
+## Related components
+
+- [EditorPanel](/components/editor-panel) - Resizes when output panel changes
+- [StatusBar](/components/status-bar) - Positioned below output panel (24px)
+- [Component overview](/components/overview) - Architecture and state management
+
+<Note>
+  The OutputPanel uses direct DOM manipulation for resize to achieve instant feedback. This bypasses React's render cycle and forces Monaco to layout synchronously, eliminating the "laggy" feel.
+</Note>
+
+<Warning>
+  During resize, an overlay is created to block Monaco's pointer events. This prevents Monaco's ResizeObserver from interfering with the drag operation.
+</Warning>
