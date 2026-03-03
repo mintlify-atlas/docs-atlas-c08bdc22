@@ -1,0 +1,260 @@
+---
+title: File type associations
+description: Open .pwn files directly with DAWNO from Windows Explorer
+---
+
+DAWNO automatically registers itself as the default application for `.pwn` files on Windows, allowing you to double-click PAWN scripts to open them in the editor.
+
+## Automatic registration
+
+When you first run DAWNO, it automatically registers the `.pwn` file association in the Windows Registry.
+
+<Info>
+  File association registration happens automatically on startup when running the packaged version of DAWNO.
+</Info>
+
+### What gets registered
+
+DAWNO creates the following registry entries:
+
+```registry
+HKEY_CURRENT_USER\Software\Classes\.pwn
+  (Default) = "DAWNO.File"
+
+HKEY_CURRENT_USER\Software\Classes\DAWNO.File
+  (Default) = "PAWN Script"
+
+HKEY_CURRENT_USER\Software\Classes\DAWNO.File\DefaultIcon
+  (Default) = "<path-to-dawno.exe>,0"
+
+HKEY_CURRENT_USER\Software\Classes\DAWNO.File\shell\open\command
+  (Default) = "<path-to-dawno.exe>" "%1"
+```
+
+<Note>
+  Registration is performed in `HKEY_CURRENT_USER`, so it doesn't require administrator privileges and is specific to your user account.
+</Note>
+
+## Opening .pwn files
+
+Once registered, you can open `.pwn` files in several ways:
+
+### From Windows Explorer
+
+<Steps>
+  <Step title="Locate your .pwn file">
+    Navigate to your PAWN script in Windows Explorer
+  </Step>
+  <Step title="Double-click to open">
+    Double-click the file to open it in DAWNO
+  </Step>
+  <Step title="File opens in editor">
+    If DAWNO is already running, the file opens in a new tab. Otherwise, DAWNO launches with the file open
+  </Step>
+</Steps>
+
+### Right-click context menu
+
+Right-click any `.pwn` file and select **Open with → DAWNO** from the context menu.
+
+### Drag and drop
+
+Drag `.pwn` files from Windows Explorer onto the DAWNO window to open them.
+
+## Single instance behavior
+
+DAWNO uses single-instance locking to prevent multiple windows:
+
+<Accordion title="How single instance works">
+  1. When you open a `.pwn` file and DAWNO is already running
+  2. The file path is sent to the existing DAWNO window
+  3. A new tab opens with the file instead of launching a second window
+  4. The existing DAWNO window is brought to focus
+</Accordion>
+
+<Info>
+  If DAWNO is minimized when you open a file, it will automatically restore and focus the window.
+</Info>
+
+## Command-line file opening
+
+You can also open files from the command line:
+
+```bash
+DAWNO.exe "C:\path\to\script.pwn"
+```
+
+### How it works
+
+<Steps>
+  <Step title="Process arguments">
+    DAWNO scans command-line arguments for file paths
+  </Step>
+  <Step title="Validate file">
+    Checks if the argument is an existing file (not a flag starting with `--`)
+  </Step>
+  <Step title="Send to renderer">
+    Sends the file path to the renderer process via the `open-external-file` IPC event
+  </Step>
+  <Step title="File opens">
+    The file opens in a new tab after a 1-second initialization delay
+  </Step>
+</Steps>
+
+## Multiple file support
+
+While the file association registry only handles single files, DAWNO's file picker supports opening multiple files at once:
+
+```typescript
+properties: ['openFile', 'multiSelections']
+```
+
+<Note>
+  Use **File → Open File** from the menu to select and open multiple `.pwn` or `.inc` files simultaneously.
+</Note>
+
+## File type filters
+
+When using the Open File dialog, DAWNO filters for PAWN-related files:
+
+| Filter | Extensions |
+| ------ | ---------- |
+| PAWN Files | `.pwn`, `.inc` |
+| All Files | `.*` |
+
+## Opening files programmatically
+
+The main process handles external file opening through IPC:
+
+```javascript
+// Second instance detection
+app.on('second-instance', (event, commandLine, workingDirectory) => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+    
+    const filePath = getFilePathFromArgs(commandLine);
+    if (filePath) {
+      mainWindow.webContents.send('open-external-file', filePath);
+    }
+  }
+});
+```
+
+<Accordion title="File path extraction logic">
+  ```javascript
+  function getFilePathFromArgs(argv) {
+    if (!argv || argv.length === 0) return null;
+    const exePath = process.execPath.toLowerCase();
+    
+    for (const arg of argv) {
+      if (arg.startsWith('--')) continue;
+      if (arg.toLowerCase() === exePath) continue;
+      
+      try {
+        if (fs.existsSync(arg) && fs.statSync(arg).isFile()) {
+          return arg;
+        }
+      } catch (e) { }
+    }
+    return null;
+  }
+  ```
+  
+  This function:
+  - Skips command-line flags (`--` arguments)
+  - Skips the executable path itself
+  - Validates that the argument is an existing file
+  - Returns the first valid file path found
+</Accordion>
+
+## File size and binary detection
+
+DAWNO performs safety checks when opening files:
+
+### Maximum file size
+
+Files larger than 5MB are rejected with a `FILE_TOO_LARGE` error.
+
+```javascript
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+```
+
+<Warning>
+  Opening very large files can impact editor performance. Consider editing large files in chunks or using a text editor optimized for large files.
+</Warning>
+
+### Binary file detection
+
+Files containing null bytes in the first 8KB are identified as binary and rejected:
+
+```javascript
+function isBinaryBuffer(buffer) {
+  const limit = Math.min(buffer.length, 8192);
+  for (let i = 0; i < limit; i++) {
+    if (buffer[i] === 0) return true;
+  }
+  return false;
+}
+```
+
+<Info>
+  If you attempt to open a binary file (like a `.amx` compiled script), DAWNO will show a `FILE_IS_BINARY` error instead of displaying garbled content.
+</Info>
+
+## Character encoding
+
+By default, files are opened with UTF-8 encoding, but DAWNO supports multiple encodings:
+
+- Files are checked for valid UTF-8 byte sequences
+- Non-UTF-8 files fallback to `windows-1254` or the configured `defaultEncoding`
+- You can change encoding after opening using the encoding picker
+
+<Accordion title="Encoding detection">
+  DAWNO uses the `iconv-lite` library for encoding support:
+  
+  ```javascript
+  function decodeBuffer(buffer, requestedEncoding) {
+    if (isBufferUtf8(buffer)) return buffer.toString('utf-8');
+    
+    let targetEncoding = requestedEncoding;
+    if (requestedEncoding === 'utf-8') {
+      targetEncoding = settingsData.defaultEncoding || 'windows-1254';
+    }
+    
+    try {
+      return iconv.decode(buffer, targetEncoding);
+    } catch (e) {
+      return iconv.decode(buffer, 'windows-1254');
+    }
+  }
+  ```
+</Accordion>
+
+## Troubleshooting
+
+### Files don't open in DAWNO
+
+If double-clicking `.pwn` files doesn't open them in DAWNO:
+
+1. Check if DAWNO is running as the packaged version (not development mode)
+2. Look for file association errors in the console
+3. Manually re-register by restarting DAWNO
+4. Check Windows Default Apps settings for `.pwn` association
+
+### Multiple DAWNO instances open
+
+If you see multiple DAWNO windows:
+
+- This indicates the single-instance lock failed
+- Close all instances and restart DAWNO
+- Check if another process is holding the lock
+
+### Files open but don't display
+
+If files open but appear blank:
+
+1. Check the file size (must be under 5MB)
+2. Verify the file isn't binary
+3. Try changing the character encoding
+4. Check the output panel for error messages

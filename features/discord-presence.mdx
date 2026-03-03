@@ -1,0 +1,281 @@
+---
+title: Discord Rich Presence
+description: Show your PAWN development activity on Discord with real-time status updates
+---
+
+DAWNO integrates Discord Rich Presence to display your current activity while developing SA-MP/open.mp scripts. Let your friends know what you're working on!
+
+## Overview
+
+Discord Rich Presence shows:
+
+<CardGroup cols={2}>
+  <Card title="Active file" icon="file-code">
+    Display the name of the file you're currently editing
+  </Card>
+  <Card title="Project name" icon="folder">
+    Show which project folder you're working in
+  </Card>
+  <Card title="DAWNO branding" icon="image">
+    Display DAWNO logo and name in your Discord status
+  </Card>
+  <Card title="Activity state" icon="circle-info">
+    Show whether you're editing, browsing, or idle
+  </Card>
+</CardGroup>
+
+## How it works
+
+The Rich Presence updates automatically based on your activity:
+
+### When editing a file
+
+```
+DAWNO Editor
+Editing: gamemode.pwn
+in MyServer
+```
+
+- **Details**: "Editing: {filename}"
+- **State**: "in {folder_name}"
+- **Large Image**: DAWNO logo with "DAWNO Editor" text
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:33-35`
+
+### When browsing a folder
+
+```
+DAWNO Editor
+Browsing: MyServer
+```
+
+- **Details**: "DAWNO Editor"
+- **State**: "Browsing: {folder_name}"
+- **Large Image**: DAWNO logo
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:36-38`
+
+### When idle
+
+```
+DAWNO Editor
+Idle
+```
+
+- **Details**: "DAWNO Editor"
+- **State**: "Idle"
+- **Large Image**: DAWNO logo
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:39-42`
+
+## Enabling Discord RPC
+
+### Default state
+
+Discord Rich Presence is **enabled by default** when you first install DAWNO.
+
+### Toggle in settings
+
+To enable or disable Rich Presence:
+
+1. Open **Settings** (gear icon in toolbar or `Ctrl+,`)
+2. Navigate to the **Integration** section
+3. Toggle the **Discord Rich Presence** checkbox
+4. Changes apply immediately - no restart required
+
+<Info>
+When disabled, DAWNO stops sending updates to Discord and clears your current activity status.
+</Info>
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:18-22`
+
+## Real-time updates
+
+Your Discord status updates automatically when:
+
+- You open a different file
+- You switch between tabs
+- You open or close a folder
+- You close all files
+
+### Update optimization
+
+To avoid spamming Discord's API:
+
+- Updates only send when the status actually changes
+- Duplicate updates are filtered out
+- Status is compared before each update
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:44-46`
+
+<Tip>
+The Rich Presence uses efficient diffing to only update Discord when your activity changes, preventing rate limits and improving performance.
+</Tip>
+
+## Status format
+
+### File name display
+
+When you open a file, Discord shows:
+
+```typescript
+details: `Editing: ${activeTabName}`
+state: folderName ? `in ${folderName}` : 'DAWNO Editor'
+```
+
+Example:
+- File: `C:\MyServer\gamemodes\main.pwn`
+- Shows: "Editing: main.pwn" / "in MyServer"
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:26-35`
+
+### Folder name extraction
+
+Folder name is extracted from the full path:
+
+```typescript
+const folderName = currentFolderPath
+    ? currentFolderPath.split(/[\\\/ ]/).pop() || currentFolderPath
+    : null;
+```
+
+Works with Windows (`\`) and Unix (`/`) path separators.
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:26-28`
+
+## Rich Presence payload
+
+DAWNO sends the following data to Discord:
+
+```typescript
+{
+  details: string,              // Primary status line
+  state: string,                // Secondary status line
+  largeImageKey: 'logo',        // DAWNO logo identifier
+  largeImageText: 'DAWNO Editor', // Hover text for logo
+  instance: false               // Not instance-specific
+}
+```
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:48-54`
+
+### Image assets
+
+- **Large image key**: `'logo'` - References the DAWNO logo uploaded to Discord's application assets
+- **Large image text**: `'DAWNO Editor'` - Shows on hover
+
+<Note>
+The logo image must be uploaded to the Discord Developer Portal for your application ID.
+</Note>
+
+## Technical implementation
+
+### React hook architecture
+
+Rich Presence is implemented as a custom React hook:
+
+```typescript
+export function useDiscordRpc() {
+  const { tabs, activeTabId, currentFolderPath, settings } = useEditorContext();
+  // ... RPC logic
+}
+```
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:6-56`
+
+### Dependency tracking
+
+The hook tracks these dependencies:
+
+- `activeTabId` - Which tab is active
+- `activeTabName` - Name of active file
+- `activeTabPath` - Full path of active file
+- `currentFolderPath` - Open project folder
+- `settings.discordRPC` - User's enable/disable preference
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:55`
+
+### IPC communication
+
+The renderer process communicates with the main process via IPC:
+
+```typescript
+window.api.toggleRPC(enabled);  // Enable/disable RPC
+window.api.updateRPC(payload);  // Update status
+```
+
+The main process handles the actual Discord SDK integration.
+
+### Update deduplication
+
+Previous update is tracked to prevent duplicates:
+
+```typescript
+const lastUpdateRef = useRef<string>('');
+const updateKey = `${details}|${state}`;
+if (updateKey === lastUpdateRef.current) return;
+lastUpdateRef.current = updateKey;
+```
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:8-46`
+
+## Privacy considerations
+
+### What is shared
+
+DAWNO shares with Discord:
+
+✅ File name (e.g., "gamemode.pwn")
+✅ Folder name (e.g., "MyServer")
+✅ Activity state (editing, browsing, idle)
+✅ DAWNO branding (logo and name)
+
+### What is NOT shared
+
+❌ Full file paths
+❌ File contents
+❌ Git commit messages
+❌ Server configuration
+❌ Personal information
+
+<Info>
+Only the base filename and folder name are extracted from paths - full paths never leave your computer.
+</Info>
+
+### Disabling RPC
+
+When Discord RPC is disabled:
+
+1. DAWNO sends `toggleRPC(false)` to the main process
+2. Discord connection is closed
+3. Your activity status is cleared
+4. No further updates are sent until re-enabled
+
+Implementation: `~/workspace/source/renderer/hooks/useDiscordRpc.ts:18-22`
+
+## Example scenarios
+
+### Scenario 1: Starting DAWNO
+
+1. Launch DAWNO with Discord running
+2. Status shows: "DAWNO Editor" / "Idle"
+3. Open a folder: "DAWNO Editor" / "Browsing: MyProject"
+4. Open a file: "Editing: script.pwn" / "in MyProject"
+
+### Scenario 2: Working on multiple files
+
+1. Open `commands.pwn`: "Editing: commands.pwn" / "in GameMode"
+2. Switch to `utils.inc`: "Editing: utils.inc" / "in GameMode"
+3. Close all tabs: "DAWNO Editor" / "Browsing: GameMode"
+
+### Scenario 3: Disabling RPC mid-session
+
+1. Currently showing: "Editing: main.pwn" / "in Server"
+2. Open Settings → Disable Discord Rich Presence
+3. Discord status clears immediately
+4. Re-enable: Status resumes with current activity
+
+## Related features
+
+- [Monaco editor](/features/monaco-editor) - The editor that triggers activity updates
+- [Internationalization](/features/internationalization) - Settings UI is translated to 13 languages

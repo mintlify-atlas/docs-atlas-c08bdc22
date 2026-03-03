@@ -1,0 +1,374 @@
+---
+title: useSettings
+description: Load and synchronize application settings from the main process
+---
+
+## Overview
+
+The `useSettings` hook loads application settings from the main process on mount and synchronizes them with the editor context. It's a lightweight hook that runs once when the application starts to populate settings from persistent storage.
+
+## Import
+
+```typescript
+import { useSettings } from '@/hooks/useSettings';
+```
+
+## Usage
+
+```typescript
+import { useSettings } from '@/hooks/useSettings';
+import { EditorProvider } from '@/context/EditorContext';
+
+function App() {
+  return (
+    <EditorProvider>
+      <EditorLayout />
+    </EditorProvider>
+  );
+}
+
+function EditorLayout() {
+  // Automatically loads settings from main process on mount
+  useSettings();
+  
+  return <Editor />;
+}
+```
+
+## Return value
+
+<ResponseField name="void" type="void">
+  This hook does not return any value. It loads settings and updates the context internally.
+</ResponseField>
+
+## Dependencies
+
+The hook uses the following context value from `EditorContext`:
+
+<ParamField path="setSettings" type="React.Dispatch<React.SetStateAction<AppSettings>>" required>
+  Function to update application settings in the context
+</ParamField>
+
+## AppSettings interface
+
+The hook loads settings that conform to the `AppSettings` interface:
+
+<CodeGroup>
+```typescript AppSettings interface
+interface AppSettings {
+  compilerPath: string;
+  includePaths: string[];
+  fontSize: number;
+  theme: string;
+  defaultEncoding?: string;
+  discordRPC?: boolean;
+  language?: string;
+  minimap?: boolean;
+  wordWrap?: boolean;
+  autoSave?: boolean;
+  autoSaveDelay?: number; // milliseconds, default 1000
+}
+```
+
+```typescript Default values
+// Default settings (defined in EditorContext)
+{
+  compilerPath: '',
+  includePaths: [],
+  fontSize: 14,
+  theme: 'dark',
+  defaultEncoding: 'utf-8',
+  discordRPC: true,
+  language: 'en',
+  minimap: true,
+  wordWrap: true,
+  autoSave: false,
+  autoSaveDelay: 1000
+}
+```
+</CodeGroup>
+
+## Settings properties
+
+<ParamField path="compilerPath" type="string">
+  Path to the PAWN compiler executable (pawncc/pawncc.exe)
+  
+  ```typescript
+  compilerPath: '/usr/local/bin/pawncc'
+  compilerPath: 'C:\\SA-MP\\pawno\\pawncc.exe'
+  ```
+</ParamField>
+
+<ParamField path="includePaths" type="string[]">
+  Array of include directories for the compiler
+  
+  ```typescript
+  includePaths: [
+    '/path/to/includes',
+    'C:\\SA-MP\\pawno\\include'
+  ]
+  ```
+</ParamField>
+
+<ParamField path="fontSize" type="number">
+  Editor font size in pixels
+  
+  ```typescript
+  fontSize: 14 // default
+  fontSize: 16 // larger text
+  ```
+</ParamField>
+
+<ParamField path="theme" type="string">
+  Editor color theme
+  
+  ```typescript
+  theme: 'dark' // default
+  theme: 'light'
+  theme: 'vs-dark' // Monaco theme ID
+  ```
+</ParamField>
+
+<ParamField path="defaultEncoding" type="string" default="utf-8">
+  Default file encoding for read/write operations
+  
+  ```typescript
+  defaultEncoding: 'utf-8'
+  defaultEncoding: 'windows-1252'
+  defaultEncoding: 'iso-8859-1'
+  ```
+</ParamField>
+
+<ParamField path="discordRPC" type="boolean" default={true}>
+  Enable Discord Rich Presence integration
+  
+  ```typescript
+  discordRPC: true  // Show "Editing: script.pwn" in Discord
+  discordRPC: false // Disable Discord integration
+  ```
+</ParamField>
+
+<ParamField path="language" type="string" default="en">
+  UI language code
+  
+  ```typescript
+  language: 'en' // English
+  language: 'es' // Spanish
+  language: 'pt' // Portuguese
+  ```
+</ParamField>
+
+<ParamField path="minimap" type="boolean" default={true}>
+  Show/hide Monaco editor minimap
+  
+  ```typescript
+  minimap: true  // Show minimap on right side
+  minimap: false // Hide minimap
+  ```
+</ParamField>
+
+<ParamField path="wordWrap" type="boolean" default={true}>
+  Enable/disable word wrapping
+  
+  ```typescript
+  wordWrap: true  // Wrap long lines
+  wordWrap: false // Horizontal scrolling
+  ```
+</ParamField>
+
+<ParamField path="autoSave" type="boolean" default={false}>
+  Enable/disable automatic file saving
+  
+  ```typescript
+  autoSave: true  // Auto-save after delay
+  autoSave: false // Manual save only
+  ```
+</ParamField>
+
+<ParamField path="autoSaveDelay" type="number" default={1000}>
+  Auto-save delay in milliseconds
+  
+  ```typescript
+  autoSaveDelay: 1000 // 1 second
+  autoSaveDelay: 3000 // 3 seconds
+  ```
+</ParamField>
+
+## How it works
+
+The hook uses a simple effect that runs once on mount:
+
+```typescript
+useEffect(() => {
+  if (!window.api) return;
+  
+  // Fetch settings from main process
+  window.api.getSettings().then(s => {
+    if (s) {
+      // Merge with existing settings (preserves defaults)
+      setSettings(prev => ({ ...prev, ...s }));
+    }
+  });
+}, [setSettings]);
+```
+
+### Key behaviors:
+
+1. **Conditional execution**: Only runs if `window.api` is available (browser environment)
+2. **Async loading**: Settings are loaded asynchronously from the main process
+3. **Merge strategy**: Uses spread operator to merge loaded settings with defaults
+4. **Null safety**: Only updates if settings are returned (handles null/undefined)
+
+## IPC API method used
+
+<ResponseField name="window.api.getSettings" type="function">
+  ```typescript
+  getSettings(): Promise<AppSettings>
+  ```
+  
+  Retrieves application settings from persistent storage in the main process.
+</ResponseField>
+
+<ResponseField name="window.api.saveSettings" type="function">
+  ```typescript
+  saveSettings(
+    settings: Partial<AppSettings>
+  ): Promise<AppSettings>
+  ```
+  
+  Saves settings to persistent storage (not used by this hook, but available for settings UI).
+</ResponseField>
+
+## Persistent storage
+
+Settings are stored in the main process using Electron's app data directory:
+
+- **Windows**: `%APPDATA%/dawno/settings.json`
+- **macOS**: `~/Library/Application Support/dawno/settings.json`
+- **Linux**: `~/.config/dawno/settings.json`
+
+## Example: Settings panel integration
+
+```typescript
+import { useEditorContext } from '@/context/EditorContext';
+
+function SettingsPanel() {
+  const { settings, setSettings } = useEditorContext();
+  
+  const handleSave = async (newSettings: Partial<AppSettings>) => {
+    // Update context
+    setSettings(prev => ({ ...prev, ...newSettings }));
+    
+    // Persist to disk
+    await window.api.saveSettings(newSettings);
+  };
+  
+  return (
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      handleSave({
+        fontSize: parseInt(e.currentTarget.fontSize.value),
+        theme: e.currentTarget.theme.value,
+        discordRPC: e.currentTarget.discordRPC.checked
+      });
+    }}>
+      <label>
+        Font Size:
+        <input 
+          name="fontSize" 
+          type="number" 
+          defaultValue={settings.fontSize} 
+        />
+      </label>
+      
+      <label>
+        Theme:
+        <select name="theme" defaultValue={settings.theme}>
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+      </label>
+      
+      <label>
+        <input 
+          name="discordRPC" 
+          type="checkbox" 
+          defaultChecked={settings.discordRPC} 
+        />
+        Enable Discord Rich Presence
+      </label>
+      
+      <button type="submit">Save Settings</button>
+    </form>
+  );
+}
+```
+
+## Example: Compiler path configuration
+
+```typescript
+import { useEditorContext } from '@/context/EditorContext';
+
+function CompilerSettings() {
+  const { settings, setSettings } = useEditorContext();
+  
+  const handleBrowseCompiler = async () => {
+    const path = await window.api.browseForFile({
+      title: 'Select PAWN Compiler',
+      filters: [
+        { name: 'Executable', extensions: ['exe', ''] }
+      ]
+    });
+    
+    if (path) {
+      const newSettings = { compilerPath: path };
+      setSettings(prev => ({ ...prev, ...newSettings }));
+      await window.api.saveSettings(newSettings);
+    }
+  };
+  
+  return (
+    <div>
+      <label>Compiler Path:</label>
+      <input 
+        type="text" 
+        value={settings.compilerPath} 
+        readOnly 
+      />
+      <button onClick={handleBrowseCompiler}>Browse...</button>
+    </div>
+  );
+}
+```
+
+<Note>
+  Settings are loaded once on mount. To update settings, use `setSettings` from the `EditorContext` and call `window.api.saveSettings()` to persist changes.
+</Note>
+
+## Example: Editor configuration from settings
+
+```typescript
+import { useEditorContext } from '@/context/EditorContext';
+import Editor from '@monaco-editor/react';
+
+function EditorPanel() {
+  const { settings } = useEditorContext();
+  
+  return (
+    <Editor
+      theme={settings.theme}
+      options={{
+        fontSize: settings.fontSize,
+        minimap: { enabled: settings.minimap },
+        wordWrap: settings.wordWrap ? 'on' : 'off'
+      }}
+    />
+  );
+}
+```
+
+## Related hooks
+
+- [useEditorBridge](/hooks/use-editor-bridge) - Uses settings for compilation
+- [useFileOperations](/hooks/use-file-operations) - Uses encoding settings
+- [useDiscordRpc](/hooks/use-discord-rpc) - Uses discordRPC setting

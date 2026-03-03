@@ -1,0 +1,386 @@
+---
+title: Building and packaging
+description: Build DAWNO for production and create distributable installers
+---
+
+This guide covers building DAWNO from source, creating packaged executables, and generating Windows installers.
+
+## Build process overview
+
+DAWNO's build pipeline consists of three main stages:
+
+```
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  Next.js Build   │ ──> │ Electron Package │ ──> │  Inno Setup      │
+│  (Static Export) │     │  (exe + assets)  │     │  (Installer)     │
+└──────────────────┘     └──────────────────┘     └──────────────────┘
+   renderer/out/           dist/DAWNO-win32-x64/   scripts/Output/
+```
+
+## Building the renderer
+
+The first step is building the Next.js frontend into static assets.
+
+### Build command
+
+```bash
+npm run build
+```
+
+This executes:
+```json
+"build": "npm run build --prefix renderer"
+```
+
+<Info>
+Internally, this runs `next build` in the `renderer/` directory, which:
+
+1. Compiles TypeScript to JavaScript
+2. Bundles React components
+3. Optimizes CSS and assets
+4. Exports static HTML/CSS/JS to `renderer/out/`
+</Info>
+
+### Build output
+
+After building, you'll find:
+
+```
+renderer/out/
+├── index.html          # Main HTML entry point
+├── _next/
+│   ├── static/         # Bundled JS and CSS
+│   └── ...             # Build artifacts
+├── assets/             # Static assets (images, fonts)
+└── ...                 # Other Next.js output files
+```
+
+<Note>
+The `main.js` Electron process loads from `renderer/out/index.html` in production mode using a custom file protocol handler (main.js:211-227).
+</Note>
+
+## Running the production build
+
+Test the production build before packaging:
+
+```bash
+npm start
+```
+
+This launches Electron with the compiled renderer (no dev server).
+
+<Tip>
+Always test the production build locally before packaging to catch any build-specific issues.
+</Tip>
+
+## Packaging with Electron Packager
+
+Electron Packager bundles your app with Electron into a distributable format.
+
+### Package command
+
+```bash
+npm run package
+```
+
+### What it does
+
+This command executes a multi-stage build:
+
+<Steps>
+  <Step title="Build renderer">
+    ```bash
+    npm run build --prefix renderer
+    ```
+    Compiles the Next.js app to static files.
+  </Step>
+
+  <Step title="Run Electron Packager">
+    ```bash
+    electron-packager . DAWNO \
+      --platform=win32 \
+      --arch=x64 \
+      --out=dist \
+      --icon=assets/icon.ico \
+      --overwrite \
+      --ignore="(^/dist|^/renderer/node_modules|...)"
+    ```
+    
+    Creates a standalone Windows x64 application.
+  </Step>
+
+  <Step title="Build installer">
+    ```bash
+    node scripts/build-installer.js
+    ```
+    
+    Generates a Windows installer using Inno Setup.
+  </Step>
+</Steps>
+
+### Packager configuration
+
+Key electron-packager options used:
+
+| Option | Value | Purpose |
+|--------|-------|----------|
+| `--platform` | `win32` | Target Windows |
+| `--arch` | `x64` | 64-bit architecture |
+| `--out` | `dist` | Output directory |
+| `--icon` | `assets/icon.ico` | Application icon |
+| `--overwrite` | ✓ | Replace existing builds |
+| `--ignore` | See below | Exclude unnecessary files |
+
+### Files excluded from packaging
+
+The `--ignore` flag excludes these paths to reduce package size:
+
+```regex
+(
+  ^/dist                      # Previous builds
+  |^/renderer/node_modules    # Frontend dependencies (only need built output)
+  |^/renderer/src             # Source files (built to /out)
+  |^/renderer/app             # Next.js app source
+  |^/renderer/components      # React components source
+  |^/renderer/context         # Context providers source
+  |^/renderer/hooks           # Hooks source
+  |^/renderer/lib             # Libraries source
+  |^/renderer/styles          # Styles source
+  |^/renderer/pawn-lib        # PAWN lib source
+  |^/renderer/public          # Public assets (bundled in /out)
+  |^/renderer/.next           # Next.js cache
+  |^/renderer/tsconfig.json   # TypeScript config
+  |^/renderer/next.config.ts  # Next.js config
+  |^/renderer/package-lock.json
+  |\.git                      # Git repository
+)
+```
+
+<Note>
+Only `renderer/out/` is included in the final package - all source files and dev dependencies are excluded.
+</Note>
+
+### Package output
+
+After packaging, you'll have:
+
+```
+dist/DAWNO-win32-x64/
+├── DAWNO.exe               # Main executable
+├── resources/
+│   └── app.asar            # Packaged application code
+├── renderer/
+│   └── out/                # Built Next.js static files
+├── assets/                 # Icons and images
+└── [Electron runtime files]
+```
+
+## Creating the Windows installer
+
+The final step generates a professional installer using Inno Setup.
+
+### Installer script
+
+The installer is configured in `scripts/DAWNO.iss`:
+
+```pascal
+#define MyAppName "DAWNO"
+#define MyAppVersion "0.0.2"
+#define MyAppPublisher "deksdeveloper"
+#define MyAppExeName "DAWNO.exe"
+#define MyAppAssocExt ".pwn"
+```
+
+### Build installer manually
+
+If you want to build just the installer (assuming package already exists):
+
+```bash
+node scripts/build-installer.js
+```
+
+This script (`scripts/build-installer.js`) uses the **innosetup-compiler** npm package:
+
+```javascript
+const innosetup = require('innosetup-compiler');
+
+await innosetup('scripts/DAWNO.iss', {
+  gui: false,      // Command-line mode
+  verbose: true,   # Detailed output
+});
+```
+
+<Info>
+**Prerequisites:** Inno Setup must be installed on your Windows system. Download from [jrsoftware.org/isdl.php](https://jrsoftware.org/isdl.php).
+
+The `innosetup-compiler` package automatically detects your Inno Setup installation.
+</Info>
+
+### Installer features
+
+The generated installer includes:
+
+- **File associations** - Registers `.pwn` files to open with DAWNO
+- **Registry entries** - Adds proper Windows file type associations
+- **Start menu shortcut** - Creates program group entry
+- **Desktop icon** - Optional desktop shortcut
+- **Uninstaller** - Clean removal with registry cleanup
+- **Multi-language support** - English and Turkish setup wizard
+
+### Installer output
+
+The final installer is saved to:
+
+```
+scripts/Output/dawno_setup_0.0.2_win64.exe
+```
+
+<Tip>
+The version number in the filename is defined in `scripts/DAWNO.iss` (`#define MyAppVersion "0.0.2"`).
+
+Update this when releasing new versions.
+</Tip>
+
+## Complete build workflow
+
+To build a full distributable release:
+
+<Steps>
+  <Step title="Update version">
+    Update version in:
+    - `package.json` (root)
+    - `scripts/DAWNO.iss` (`MyAppVersion`)
+  </Step>
+
+  <Step title="Clean previous builds">
+    ```bash
+    rm -rf dist/
+    rm -rf renderer/out/
+    rm -rf renderer/.next/
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    npm install --prefix renderer
+    ```
+  </Step>
+
+  <Step title="Run package command">
+    ```bash
+    npm run package
+    ```
+    
+    This builds everything and creates the installer.
+  </Step>
+
+  <Step title="Test the installer">
+    Run `scripts/Output/dawno_setup_0.0.2_win64.exe` on a clean system to verify:
+    - Installation completes successfully
+    - Application launches
+    - File associations work
+    - All features function correctly
+  </Step>
+</Steps>
+
+## Build optimization tips
+
+### Reducing package size
+
+<CodeGroup>
+```json Production dependencies only
+// In package.json, move build tools to devDependencies
+{
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "discord-rpc": "^4.0.1",
+    "electron-updater": "^6.8.3",
+    "iconv-lite": "^0.7.2"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-packager": "^17.1.1",
+    "innosetup-compiler": "^6.3.1"
+  }
+}
+```
+
+```bash Clean install for production
+# Install only production dependencies
+npm install --production
+```
+</CodeGroup>
+
+### Using asar archives
+
+Electron Packager automatically creates `app.asar` to:
+- Reduce file count (faster installation)
+- Minor obfuscation of source code
+- Slightly faster module loading
+
+<Note>
+Asar archives are read-only. Any files that need write access (like config files) should remain outside the asar.
+</Note>
+
+## Troubleshooting
+
+### Build fails: "next: command not found"
+
+**Solution:** Install renderer dependencies:
+
+```bash
+cd renderer
+npm install
+```
+
+### Packager fails: "Application entry point not found"
+
+**Solution:** Ensure `main.js` exists in root and `package.json` has:
+
+```json
+{
+  "main": "main.js"
+}
+```
+
+### Installer build fails: "Inno Setup not found"
+
+**Solution:** Install Inno Setup 6 from [jrsoftware.org](https://jrsoftware.org/isdl.php).
+
+### Package size too large
+
+**Solution:** Check what's being included:
+
+```bash
+# Analyze package contents
+cd dist/DAWNO-win32-x64
+du -sh *  # Unix
+# Or browse manually on Windows
+```
+
+Verify all source files are excluded by the `--ignore` pattern.
+
+## Build scripts reference
+
+### Available npm scripts
+
+| Script | Command | Purpose |
+|--------|---------|----------|
+| `dev` | `npm run build --prefix renderer && electron . --dev` | Development mode with built renderer |
+| `dev:next` | `npm run dev --prefix renderer` | Start Next.js dev server only |
+| `build` | `npm run build --prefix renderer` | Build renderer to static files |
+| `start` | `electron .` | Run production build locally |
+| `package` | See above | Full build + package + installer |
+| `postinstall` | `npm install --prefix renderer` | Auto-install renderer deps |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Contributing" icon="code-pull-request" href="/development/contributing">
+    Guidelines for submitting your changes
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/development/architecture">
+    Understand the technical architecture
+  </Card>
+</CardGroup>

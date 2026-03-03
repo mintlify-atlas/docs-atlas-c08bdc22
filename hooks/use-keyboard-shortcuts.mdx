@@ -1,0 +1,447 @@
+---
+title: useKeyboardShortcuts
+description: Global keyboard shortcuts for file operations, editor actions, and compilation
+---
+
+## Overview
+
+The `useKeyboardShortcuts` hook provides global keyboard shortcuts for common IDE operations in DAWNO. It handles file operations (new, open, save), editor actions (find, replace, go to line), tab management, and compilation.
+
+All shortcuts follow standard IDE conventions (VSCode, Sublime Text, etc.) for familiarity.
+
+## Import
+
+```typescript
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+```
+
+## Usage
+
+```typescript
+import { useState } from 'react';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+
+function EditorLayout() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  
+  // Set up global keyboard shortcuts
+  useKeyboardShortcuts({ setSettingsOpen });
+  
+  return (
+    <div>
+      <Editor />
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
+    </div>
+  );
+}
+```
+
+## Parameters
+
+<ParamField path="setSettingsOpen" type="(v: boolean) => void" required>
+  Function to show/hide the settings panel
+  
+  ```typescript
+  useKeyboardShortcuts({ setSettingsOpen });
+  ```
+</ParamField>
+
+## Return value
+
+<ResponseField name="void" type="void">
+  This hook does not return any value. It registers global keyboard event listeners.
+</ResponseField>
+
+## Dependencies
+
+The hook uses the following from `EditorContext` and `useFileOperations`:
+
+<ParamField path="activeTabId" type="number | null" required>
+  ID of the currently active tab (for closing)
+</ParamField>
+
+<ParamField path="closeTab" type="(id: number) => void" required>
+  Function to close a tab
+</ParamField>
+
+<ParamField path="editorRef" type="React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>" required>
+  Reference to the Monaco editor instance (for editor actions)
+</ParamField>
+
+<ParamField path="newFile" type="() => void" required>
+  Function to create a new file (from useFileOperations)
+</ParamField>
+
+<ParamField path="openFile" type="() => Promise<void>" required>
+  Function to open file picker (from useFileOperations)
+</ParamField>
+
+<ParamField path="saveFile" type="(isSaveAs?: boolean) => Promise<void>" required>
+  Function to save file (from useFileOperations)
+</ParamField>
+
+## Keyboard shortcuts
+
+### File operations
+
+<CodeGroup>
+```typescript Ctrl+N - New file
+// Creates a new untitled PAWN script
+if (e.ctrlKey && e.key.toLowerCase() === 'n') {
+  e.preventDefault();
+  newFile();
+}
+```
+
+```typescript Ctrl+O - Open file
+// Opens file picker dialog
+if (e.ctrlKey && e.key.toLowerCase() === 'o') {
+  e.preventDefault();
+  openFile();
+}
+```
+
+```typescript Ctrl+S - Save
+// Saves current file
+if (e.ctrlKey && e.key.toLowerCase() === 's' && !e.shiftKey) {
+  e.preventDefault();
+  saveFile(false);
+}
+```
+
+```typescript Ctrl+Shift+S - Save As
+// Opens Save As dialog
+if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
+  e.preventDefault();
+  saveFile(true);
+}
+```
+
+```typescript Ctrl+W - Close tab
+// Closes active tab
+if (e.ctrlKey && e.key.toLowerCase() === 'w') {
+  e.preventDefault();
+  if (activeTabId) closeTab(activeTabId);
+}
+```
+</CodeGroup>
+
+### Editor actions
+
+<CodeGroup>
+```typescript Ctrl+F - Find
+// Opens find dialog in Monaco editor
+if (e.ctrlKey && e.key.toLowerCase() === 'f') {
+  // No preventDefault() - let Monaco handle it
+  editorRef.current?.trigger('keyboard', 'actions.find', {});
+}
+```
+
+```typescript Ctrl+H - Find and Replace
+// Opens find/replace dialog in Monaco editor
+if (e.ctrlKey && e.key.toLowerCase() === 'h') {
+  e.preventDefault();
+  editorRef.current?.trigger('keyboard', 'editor.action.startFindReplaceAction', {});
+}
+```
+
+```typescript Ctrl+G - Go to Line
+// Opens "Go to Line" dialog in Monaco editor
+if (e.ctrlKey && e.key.toLowerCase() === 'g') {
+  e.preventDefault();
+  editorRef.current?.trigger('keyboard', 'editor.action.gotoLine', {});
+}
+```
+</CodeGroup>
+
+### Application shortcuts
+
+<CodeGroup>
+```typescript Ctrl+, - Settings
+// Opens settings panel
+if (e.ctrlKey && e.key === ',') {
+  e.preventDefault();
+  setSettingsOpen(true);
+}
+```
+
+```typescript F5 - Compile
+// Compiles current file
+if (e.key === 'F5') {
+  e.preventDefault();
+  document.dispatchEvent(new CustomEvent('dawno:compile'));
+}
+```
+
+```typescript F2 - Reserved
+// Reserved for future use
+if (e.key === 'F2') {
+  // reserved
+}
+```
+</CodeGroup>
+
+## Shortcut reference table
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Ctrl+N` | New File | Creates a new untitled script |
+| `Ctrl+O` | Open File | Opens file picker dialog |
+| `Ctrl+S` | Save | Saves the current file |
+| `Ctrl+Shift+S` | Save As | Opens Save As dialog |
+| `Ctrl+W` | Close Tab | Closes the active tab |
+| `Ctrl+F` | Find | Opens find dialog |
+| `Ctrl+H` | Replace | Opens find/replace dialog |
+| `Ctrl+G` | Go to Line | Opens go to line dialog |
+| `Ctrl+,` | Settings | Opens settings panel |
+| `F5` | Compile | Compiles the current file |
+| `F2` | Reserved | Reserved for future use |
+
+## Monaco editor actions
+
+The hook triggers Monaco editor commands using the `trigger` API:
+
+```typescript
+editorRef.current?.trigger(
+  'keyboard',           // Source of the action
+  'actions.find',       // Command ID
+  {}                    // Command arguments
+);
+```
+
+### Available Monaco commands
+
+<ResponseField name="actions.find" type="string">
+  Opens the find widget (Ctrl+F)
+</ResponseField>
+
+<ResponseField name="editor.action.startFindReplaceAction" type="string">
+  Opens the find/replace widget (Ctrl+H)
+</ResponseField>
+
+<ResponseField name="editor.action.gotoLine" type="string">
+  Opens the "Go to Line" dialog (Ctrl+G)
+</ResponseField>
+
+## Custom event dispatching
+
+Some shortcuts dispatch custom DOM events for other hooks to handle:
+
+### Compile event
+
+```typescript
+// useKeyboardShortcuts dispatches
+document.dispatchEvent(new CustomEvent('dawno:compile'));
+
+// useEditorBridge handles
+document.addEventListener('dawno:compile', handleCompile);
+```
+
+### Save request event
+
+```typescript
+// useFileOperations dispatches (via saveFile)
+document.dispatchEvent(
+  new CustomEvent('dawno:save-request', { 
+    detail: { isSaveAs: true } 
+  })
+);
+
+// useEditorBridge handles
+document.addEventListener('dawno:save-request', handleSaveRequest);
+```
+
+## Implementation details
+
+### Event listener setup
+
+The hook attaches a global keydown listener:
+
+```typescript
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    // Handle all shortcuts
+  };
+  
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+}, [dependencies]);
+```
+
+### Case-insensitive matching
+
+All key comparisons use `.toLowerCase()` for consistency:
+
+```typescript
+if (e.key.toLowerCase() === 's') {
+  // Matches both 's' and 'S'
+}
+```
+
+### Prevent default behavior
+
+Most shortcuts call `preventDefault()` to prevent browser defaults:
+
+```typescript
+if (e.ctrlKey && e.key.toLowerCase() === 's') {
+  e.preventDefault(); // Prevents browser "Save Page" dialog
+  saveFile(e.shiftKey);
+}
+```
+
+<Note>
+  Ctrl+F does NOT call `preventDefault()` to allow Monaco's built-in find behavior.
+</Note>
+
+## Platform differences
+
+On macOS, these shortcuts use `Cmd` instead of `Ctrl`:
+
+```typescript
+// Current implementation uses Ctrl on all platforms
+// For macOS support, you would check:
+const modifier = e.metaKey; // Cmd on macOS
+const modifier = e.ctrlKey; // Ctrl on Windows/Linux
+```
+
+## Example: Custom shortcut handler
+
+```typescript
+import { useEffect } from 'react';
+import { useEditorContext } from '@/context/EditorContext';
+
+function useCustomShortcuts() {
+  const { editorRef } = useEditorContext();
+  
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Shift+F - Format document
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        editorRef.current?.trigger(
+          'keyboard',
+          'editor.action.formatDocument',
+          {}
+        );
+      }
+      
+      // Ctrl+/ - Toggle comment
+      if (e.ctrlKey && e.key === '/') {
+        e.preventDefault();
+        editorRef.current?.trigger(
+          'keyboard',
+          'editor.action.commentLine',
+          {}
+        );
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editorRef]);
+}
+```
+
+## Example: Displaying shortcuts in UI
+
+```typescript
+function ShortcutHelp() {
+  return (
+    <div className="shortcuts-help">
+      <h3>Keyboard Shortcuts</h3>
+      
+      <section>
+        <h4>File</h4>
+        <dl>
+          <dt>Ctrl+N</dt>
+          <dd>New File</dd>
+          
+          <dt>Ctrl+O</dt>
+          <dd>Open File</dd>
+          
+          <dt>Ctrl+S</dt>
+          <dd>Save</dd>
+          
+          <dt>Ctrl+Shift+S</dt>
+          <dd>Save As</dd>
+          
+          <dt>Ctrl+W</dt>
+          <dd>Close Tab</dd>
+        </dl>
+      </section>
+      
+      <section>
+        <h4>Edit</h4>
+        <dl>
+          <dt>Ctrl+F</dt>
+          <dd>Find</dd>
+          
+          <dt>Ctrl+H</dt>
+          <dd>Replace</dd>
+          
+          <dt>Ctrl+G</dt>
+          <dd>Go to Line</dd>
+        </dl>
+      </section>
+      
+      <section>
+        <h4>Build</h4>
+        <dl>
+          <dt>F5</dt>
+          <dd>Compile</dd>
+        </dl>
+      </section>
+    </div>
+  );
+}
+```
+
+## Example: Conditional shortcuts
+
+```typescript
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useEditorContext } from '@/context/EditorContext';
+
+function ConditionalShortcuts() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { activeTabId } = useEditorContext();
+  
+  // Only enable shortcuts when settings are closed
+  useEffect(() => {
+    if (settingsOpen) {
+      // Shortcuts disabled in settings panel
+      return;
+    }
+    
+    // Enable shortcuts
+  }, [settingsOpen]);
+  
+  // Standard shortcuts
+  useKeyboardShortcuts({ setSettingsOpen });
+  
+  return <div>...</div>;
+}
+```
+
+<Note>
+  Keyboard shortcuts are global and work regardless of which UI element has focus. This ensures IDE-like behavior where shortcuts work everywhere.
+</Note>
+
+## Accessibility considerations
+
+Keyboard shortcuts improve accessibility by providing keyboard-only navigation:
+
+- **File operations** without using mouse
+- **Editor navigation** for power users
+- **Quick access** to settings and compilation
+
+Consider adding:
+- Visual indicators for active shortcuts
+- Customizable keybindings
+- Shortcut cheat sheet (Ctrl+?)
+
+## Related hooks
+
+- [useFileOperations](/hooks/use-file-operations) - Provides newFile, openFile, saveFile
+- [useEditorBridge](/hooks/use-editor-bridge) - Handles compile and save events
+- [useSettings](/hooks/use-settings) - Manages settings opened by Ctrl+,

@@ -1,0 +1,445 @@
+---
+title: Contribution guidelines
+description: How to contribute to DAWNO - from bug reports to pull requests
+---
+
+We welcome contributions to DAWNO! Whether you're fixing bugs, adding features, improving documentation, or translating to new languages, your help is appreciated.
+
+## Ways to contribute
+
+<CardGroup cols={2}>
+  <Card title="Report bugs" icon="bug">
+    Found an issue? Report it on GitHub Issues with detailed reproduction steps.
+  </Card>
+  <Card title="Suggest features" icon="lightbulb">
+    Have an idea? Open a feature request to discuss improvements.
+  </Card>
+  <Card title="Fix bugs" icon="wrench">
+    Browse open issues and submit pull requests with fixes.
+  </Card>
+  <Card title="Add features" icon="code">
+    Implement new functionality following our architecture guidelines.
+  </Card>
+  <Card title="Improve docs" icon="book">
+    Help others by improving or expanding documentation.
+  </Card>
+  <Card title="Translate" icon="language">
+    Add support for new languages in the i18n system.
+  </Card>
+</CardGroup>
+
+## Before you start
+
+### Check existing issues
+
+Before creating a new issue or starting work:
+
+1. Search [existing issues](https://github.com/deksdeveloper/dawno/issues) to avoid duplicates
+2. Check if someone is already working on it
+3. Comment on the issue to express interest in working on it
+
+### Discuss major changes
+
+For significant changes:
+
+- Open an issue first to discuss your approach
+- Get feedback from maintainers before investing time
+- Ensure the change aligns with project goals
+
+<Note>
+Small bug fixes and typo corrections don't need prior discussion - just submit a PR!
+</Note>
+
+## Setting up your environment
+
+<Steps>
+  <Step title="Fork the repository">
+    Click **Fork** on [github.com/deksdeveloper/dawno](https://github.com/deksdeveloper/dawno) to create your own copy.
+  </Step>
+
+  <Step title="Clone your fork">
+    ```bash
+    git clone https://github.com/YOUR-USERNAME/dawno.git
+    cd dawno
+    ```
+  </Step>
+
+  <Step title="Add upstream remote">
+    ```bash
+    git remote add upstream https://github.com/deksdeveloper/dawno.git
+    ```
+    
+    This lets you sync with the main repository.
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+    
+    This installs both root and renderer dependencies via the `postinstall` script.
+  </Step>
+
+  <Step title="Create a branch">
+    ```bash
+    git checkout -b feature/my-new-feature
+    ```
+    
+    Use descriptive branch names like `fix/encoding-issue` or `feature/git-stash-support`.
+  </Step>
+</Steps>
+
+## Development workflow
+
+### Making changes
+
+<Steps>
+  <Step title="Run development mode">
+    ```bash
+    npm run dev:next  # Terminal 1: Next.js dev server
+    npm run dev       # Terminal 2: Electron app
+    ```
+  </Step>
+
+  <Step title="Make your changes">
+    Edit files following our [coding standards](#coding-standards).
+  </Step>
+
+  <Step title="Test thoroughly">
+    - Test the specific feature/fix
+    - Test related functionality
+    - Test on Windows if possible (primary platform)
+    - Check console for errors
+  </Step>
+
+  <Step title="Commit your changes">
+    ```bash
+    git add .
+    git commit -m "feat: add git stash support in source control panel"
+    ```
+    
+    See [commit message guidelines](#commit-message-format).
+  </Step>
+</Steps>
+
+### Syncing with upstream
+
+Keep your fork up to date:
+
+```bash
+git fetch upstream
+git checkout main
+git merge upstream/main
+git push origin main
+```
+
+## Coding standards
+
+### JavaScript/TypeScript style
+
+<Info>
+**General principles:**
+
+- Use **const** for variables that don't change, **let** for those that do
+- Prefer **arrow functions** for callbacks
+- Use **async/await** over raw Promises
+- Add **JSDoc comments** for complex functions
+- Keep functions **small and focused** (single responsibility)
+</Info>
+
+### Code formatting
+
+DAWNO uses standard JavaScript formatting:
+
+- **2 spaces** for indentation (renderer), **4 spaces** (main.js)
+- **Semicolons** at end of statements
+- **Single quotes** for strings
+- **Template literals** for string interpolation
+
+<CodeGroup>
+```javascript Good
+const message = `File ${fileName} saved successfully`;
+const result = await window.api.saveFile({ path, content });
+
+if (result.success) {
+  console.log('Save completed');
+}
+```
+
+```javascript Avoid
+var message = "File " + fileName + " saved successfully"  // No semicolon
+window.api.saveFile({ path, content }).then(result => {   // Prefer async/await
+  if (result.success) console.log('Save completed')       // Missing braces
+})
+```
+</CodeGroup>
+
+### React/Next.js conventions
+
+For renderer code:
+
+- Use **functional components** with hooks
+- Extract **custom hooks** for reusable logic
+- Use **React Context** for global state
+- Keep components **focused and composable**
+
+```typescript
+// Good: Functional component with hooks
+export default function EditorPanel() {
+  const { currentFile, saveFile } = useWorkspace();
+  const [isModified, setIsModified] = useState(false);
+
+  const handleSave = async () => {
+    await saveFile(currentFile);
+    setIsModified(false);
+  };
+
+  return <div>...</div>;
+}
+```
+
+### Electron best practices
+
+<Steps>
+  <Step title="IPC communication">
+    Always validate inputs in IPC handlers:
+    
+    ```javascript
+    ipcMain.handle('my-handler', async (event, args) => {
+      if (!args || !args.filePath) {
+        return { success: false, error: 'Invalid arguments' };
+      }
+      
+      // Validate file path
+      if (!fs.existsSync(args.filePath)) {
+        return { success: false, error: 'File not found' };
+      }
+      
+      // Proceed with operation
+    });
+    ```
+  </Step>
+
+  <Step title="Error handling">
+    Always wrap risky operations:
+    
+    ```javascript
+    try {
+      const data = fs.readFileSync(filePath, 'utf-8');
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+    ```
+  </Step>
+
+  <Step title="Security">
+    Never expose Node.js directly to renderer:
+    
+    - Use `contextIsolation: true` ✓
+    - Use `nodeIntegration: false` ✓
+    - Expose only needed APIs via preload.js ✓
+  </Step>
+</Steps>
+
+## Commit message format
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/) for clear history:
+
+```
+type(scope): subject
+
+body (optional)
+
+footer (optional)
+```
+
+### Commit types
+
+| Type | Description | Example |
+|------|-------------|----------|
+| `feat` | New feature | `feat: add git stash support` |
+| `fix` | Bug fix | `fix: prevent crash on empty file` |
+| `docs` | Documentation | `docs: update build instructions` |
+| `style` | Code style/formatting | `style: fix indentation in main.js` |
+| `refactor` | Code restructuring | `refactor: extract encoding logic` |
+| `perf` | Performance improvement | `perf: optimize file watcher` |
+| `test` | Tests | `test: add encoding tests` |
+| `chore` | Build/tooling | `chore: update dependencies` |
+
+### Examples
+
+<CodeGroup>
+```bash Feature
+feat(git): add visual diff viewer for staged files
+
+Implements a side-by-side diff viewer in the source control panel.
+Users can now preview changes before committing.
+```
+
+```bash Bug fix
+fix(encoding): prevent crash when reading binary files
+
+Added binary file detection to prevent Monaco from attempting
+to load binary data as text, which caused UI freezes.
+
+Fixes #123
+```
+
+```bash Simple fix
+fix: correct typo in Turkish translation
+```
+</CodeGroup>
+
+## Submitting a pull request
+
+<Steps>
+  <Step title="Push your branch">
+    ```bash
+    git push origin feature/my-new-feature
+    ```
+  </Step>
+
+  <Step title="Create pull request">
+    1. Go to your fork on GitHub
+    2. Click **Compare & pull request**
+    3. Fill out the PR template
+    4. Submit the PR
+  </Step>
+
+  <Step title="PR description">
+    Include:
+    
+    - **What** the change does
+    - **Why** it's needed
+    - **How** to test it
+    - Screenshots (for UI changes)
+    - Related issue numbers (e.g., "Fixes #123")
+  </Step>
+
+  <Step title="Code review">
+    - Respond to feedback promptly
+    - Make requested changes
+    - Push updates to the same branch
+    - Discuss any disagreements constructively
+  </Step>
+</Steps>
+
+### PR checklist
+
+Before submitting, verify:
+
+- [ ] Code follows project style guidelines
+- [ ] No console errors or warnings
+- [ ] Tested manually on Windows
+- [ ] Commit messages follow conventions
+- [ ] No commented-out code or debug logs
+- [ ] Updated documentation if needed
+- [ ] Added translation keys to all locale files (if UI changes)
+
+<Tip>
+Keep PRs focused on a single feature or fix. Multiple unrelated changes should be separate PRs.
+</Tip>
+
+## Adding translations
+
+To add support for a new language:
+
+<Steps>
+  <Step title="Create locale file">
+    Copy `renderer/i18n/locales/en.json` to `renderer/i18n/locales/[language-code].json`
+    
+    ```bash
+    cp renderer/i18n/locales/en.json renderer/i18n/locales/pt.json  # Portuguese
+    ```
+  </Step>
+
+  <Step title="Translate strings">
+    Translate all keys in the JSON file:
+    
+    ```json
+    {
+      "app_title": "DAWNO - Editor PAWN",
+      "file_menu": "Arquivo",
+      "save": "Salvar",
+      ...
+    }
+    ```
+  </Step>
+
+  <Step title="Add to language selector">
+    Update the language selector component to include the new language.
+  </Step>
+
+  <Step title="Test thoroughly">
+    - Switch to the new language in settings
+    - Check all UI elements render correctly
+    - Verify no missing translations (check console)
+  </Step>
+</Steps>
+
+<Note>
+DAWNO currently supports 13 languages: English, Turkish, German, Arabic, Spanish, French, Italian, Japanese, Korean, Portuguese, Russian, Vietnamese, and Chinese.
+</Note>
+
+## Reporting bugs
+
+Good bug reports help us fix issues faster!
+
+### Include in your report
+
+- **DAWNO version** (Help → About)
+- **Operating system** (Windows 10/11, version)
+- **Node.js version** (if running from source)
+- **Steps to reproduce** (detailed and minimal)
+- **Expected behavior**
+- **Actual behavior**
+- **Screenshots or error messages**
+- **Console output** (if relevant)
+
+### Example bug report
+
+```markdown
+**Version:** DAWNO 0.0.2
+**OS:** Windows 11 22H2
+
+**Steps to reproduce:**
+1. Open a file with Turkish characters (e.g., şğü)
+2. Change encoding to UTF-8
+3. Save the file
+4. Reopen the file
+
+**Expected:** Characters display correctly
+**Actual:** Characters show as � (replacement character)
+
+**Console output:**
+```
+Error: Encoding detection failed...
+```
+
+**Screenshot:** [attach image]
+```
+
+## License
+
+By contributing to DAWNO, you agree that your contributions will be licensed under the **MIT License**.
+
+## Questions?
+
+Not sure about something? Options:
+
+- **Open an issue** for general questions
+- **Comment on relevant issues** for specific questions
+- **Check existing documentation** in `/docs`
+
+## Recognition
+
+Contributors are recognized in:
+
+- GitHub contributors page
+- Release notes (for significant contributions)
+- About dialog (if multiple contributions)
+
+---
+
+Thank you for contributing to DAWNO! Your efforts help make PAWN development better for everyone in the SA-MP and open.mp communities.

@@ -1,0 +1,201 @@
+---
+title: Monaco editor integration
+description: Professional code editing powered by Microsoft's Monaco Editor with custom PAWN language support
+---
+
+DAWNO uses Microsoft's Monaco Editor, the same powerful code editor that powers Visual Studio Code, providing a professional development experience for PAWN scripting.
+
+## Core features
+
+The Monaco editor integration provides:
+
+<CardGroup cols={2}>
+  <Card title="Syntax highlighting" icon="palette">
+    Full PAWN language support with custom tokenization for keywords, natives, callbacks, and constants
+  </Card>
+  <Card title="IntelliSense" icon="lightbulb">
+    Smart autocomplete for SA-MP/open.mp natives, callbacks, and snippets
+  </Card>
+  <Card title="Signature help" icon="info-circle">
+    Live parameter hints while typing function calls
+  </Card>
+  <Card title="Hover documentation" icon="book">
+    Instant documentation for built-in functions on hover
+  </Card>
+</CardGroup>
+
+## PAWN language support
+
+DAWNO includes a comprehensive PAWN language definition that recognizes:
+
+### Syntax elements
+
+- **Keywords**: `public`, `stock`, `native`, `forward`, `new`, `if`, `else`, `for`, `while`, `switch`, `return`, etc.
+- **Type keywords**: `Float`, `bool`, `Text`, `Menu`, `DB`, `DBResult`, etc.
+- **Preprocessor directives**: `#include`, `#define`, `#if`, `#pragma`, `#emit`, etc.
+- **Constants**: `MAX_PLAYERS`, `INVALID_PLAYER_ID`, `WEAPON_*`, `DIALOG_STYLE_*`, etc.
+
+### SA-MP/open.mp natives
+
+The editor provides autocomplete and documentation for over 200 native functions including:
+
+- Player functions: `SetPlayerPos`, `GetPlayerHealth`, `GivePlayerWeapon`, `ShowPlayerDialog`
+- Vehicle functions: `CreateVehicle`, `SetVehicleHealth`, `AttachTrailerToVehicle`
+- Object functions: `CreateObject`, `MoveObject`, `AttachObjectToPlayer`
+- TextDraw functions: `TextDrawCreate`, `TextDrawShowForPlayer`
+- Database functions: `db_open`, `db_query`, `db_free_result`
+
+<Tip>
+Hover over any SA-MP native function to see its signature, description, and parameter details.
+</Tip>
+
+### Callbacks
+
+Smart autocomplete for all SA-MP/open.mp callbacks:
+
+- `OnGameModeInit`, `OnPlayerConnect`, `OnPlayerCommandText`
+- `OnVehicleSpawn`, `OnDialogResponse`, `OnPlayerStateChange`
+- And 30+ more callbacks
+
+## Code intelligence
+
+### Autocomplete
+
+The editor provides context-aware suggestions as you type:
+
+```pawn
+SendClient  // Autocomplete suggests SendClientMessage, SendClientMessageToAll
+```
+
+Implementation: `~/workspace/source/renderer/pawn-lib/pawnLanguage.ts:519-656`
+
+### Signature help
+
+When typing function calls, see live parameter hints:
+
+```pawn
+ShowPlayerDialog(playerid,  // Shows: dialogid, style, caption, info, button1, button2
+```
+
+Press `(` or `,` to trigger signature help automatically.
+
+Implementation: `~/workspace/source/renderer/pawn-lib/pawnLanguage.ts:690-737`
+
+### Hover documentation
+
+Hover over any native function to see:
+
+- Full function signature
+- Description of what the function does
+- Detailed parameter information
+
+<Info>
+The hover provider includes documentation for common natives like `SendClientMessage`, `SetPlayerPos`, `CreateVehicle`, and many more.
+</Info>
+
+Implementation: `~/workspace/source/renderer/pawn-lib/pawnLanguage.ts:659-687`
+
+## Code snippets
+
+DAWNO includes built-in snippets for common PAWN patterns:
+
+| Snippet | Description |
+|---------|-------------|
+| `public OnPlayerConnect` | Creates OnPlayerConnect callback |
+| `public OnPlayerCommandText` | Creates command handler with strcmp check |
+| `SetTimer snippet` | Inserts SetTimer with placeholders |
+| `CMD:` | Creates zcmd/sscanf command structure |
+| `for loop` | Creates for loop with MAX_PLAYERS |
+| `#include` | Inserts include directive |
+| `#define` | Inserts define directive |
+| `SendClientMessage snippet` | Quick SendClientMessage call |
+
+Implementation: `~/workspace/source/renderer/pawn-lib/pawnLanguage.ts:579-652`
+
+## Editor customization
+
+The Monaco editor can be customized through the Settings modal:
+
+<CardGroup cols={2}>
+  <Card title="Font size" icon="text-size">
+    Adjustable from 8pt to 30pt (default: 14pt)
+  </Card>
+  <Card title="Minimap" icon="map">
+    Toggle code overview minimap on/off
+  </Card>
+  <Card title="Word wrap" icon="text-wrap">
+    Enable/disable automatic line wrapping
+  </Card>
+  <Card title="Theme" icon="palette">
+    Light or dark theme support
+  </Card>
+</CardGroup>
+
+### Keyboard shortcuts
+
+- `Ctrl +` / `Ctrl -`: Increase/decrease font size
+- `Ctrl 0`: Reset font size to default
+- `Ctrl G`: Go to line
+- `Ctrl H`: Find and replace
+- `Ctrl F`: Find
+
+Implementation: `~/workspace/source/renderer/components/EditorPanel.tsx:96-113`
+
+## Editor features
+
+### Language configuration
+
+The PAWN language configuration includes:
+
+- **Auto-closing pairs**: `{}`, `[]`, `()`, `""`, `''`
+- **Surrounding pairs**: Automatic wrapping of selections
+- **Comment support**: Line comments (`//`) and block comments (`/* */`)
+- **Smart indentation**: Automatic indentation based on braces
+- **Code folding**: Collapse/expand code blocks
+
+Implementation: `~/workspace/source/renderer/pawn-lib/pawnLanguage.ts:473-516`
+
+### Monarch tokenizer
+
+DAWNO uses Monaco's Monarch syntax highlighting system with:
+
+- Custom token colors for different PAWN elements
+- Include path recognition for `#include` directives
+- String and character literal support with escape sequences
+- Hex, decimal, and float number recognition
+- Multi-line comment support
+
+Implementation: `~/workspace/source/renderer/pawn-lib/pawnLanguage.ts:354-470`
+
+## Technical implementation
+
+The editor is integrated using `@monaco-editor/react` and custom PAWN language registration:
+
+```typescript
+import { Editor, useMonaco } from '@monaco-editor/react';
+import { registerPawnLanguage } from '../pawn-lib/pawnLanguage';
+```
+
+### Editor lifecycle
+
+1. **Mount**: Editor initializes with default options
+2. **Language registration**: PAWN language is registered on first mount
+3. **Model management**: Each file gets its own Monaco model
+4. **Settings sync**: Editor options update reactively when settings change
+
+<Note>
+The editor component never unmounts to prevent crashes when closing all tabs. It uses model switching instead.
+</Note>
+
+Implementation: `~/workspace/source/renderer/components/EditorPanel.tsx:30-72`
+
+### Cursor position tracking
+
+Cursor position is tracked with debouncing (200ms) to update the status bar efficiently.
+
+Implementation: `~/workspace/source/renderer/components/EditorPanel.tsx:63-71`
+
+## Related features
+
+- [Auto-save](/features/auto-save) - Automatic file saving while editing
+- [Git source control](/features/git-source-control) - Version control integration

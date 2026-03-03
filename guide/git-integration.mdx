@@ -1,0 +1,306 @@
+---
+title: Git integration
+description: Use the built-in Git GUI to version control your PAWN scripts without leaving DAWNO.
+---
+
+DAWNO includes a complete native Git integration, allowing you to manage source control directly from the IDE without using the command line.
+
+## Accessing source control
+
+Click the **Git branch icon** in the activity bar (left side) to open the Source Control panel.
+
+<Info>
+  A badge on the Git icon shows the total number of uncommitted changes (staged + unstaged + untracked).
+</Info>
+
+## Initializing a repository
+
+If your folder is not yet a Git repository:
+
+<Steps>
+  <Step title="Open the Source Control panel">
+    Click the Git icon in the activity bar.
+  </Step>
+  
+  <Step title="Initialize">
+    Click **Initialize Repository** button.
+  </Step>
+  
+  <Step title="Confirmation">
+    A `.git` folder is created in your workspace, and Git tracking begins.
+  </Step>
+</Steps>
+
+## Viewing changes
+
+The Source Control panel organizes changes into three sections:
+
+### Staged changes
+
+Files ready to be committed. These will be included in your next commit.
+
+### Changes (unstaged)
+
+Files that have been modified but not yet staged for commit.
+
+### Untracked files
+
+New files that Git isn't tracking yet.
+
+<Accordion title="File status indicators">
+  Each file shows a badge indicating its status:
+  
+  | Badge | Status | Color |
+  |-------|--------|-------|
+  | **M** | Modified | Orange |
+  | **A** | Added | Green |
+  | **D** | Deleted | Red |
+  | **U** | Untracked | Green |
+</Accordion>
+
+## Staging changes
+
+### Stage individual files
+
+<Tabs>
+  <Tab title="Hover action">
+    Hover over a file in the **Changes** or **Untracked** section and click the **+** button.
+  </Tab>
+  
+  <Tab title="Context menu">
+    Right-click a file → **Stage Changes**
+  </Tab>
+</Tabs>
+
+### Stage all changes
+
+Click the **checkmark** icon in the Source Control panel header to stage all unstaged and untracked files at once.
+
+### Unstage files
+
+<Tabs>
+  <Tab title="Hover action">
+    Hover over a staged file and click the **−** button.
+  </Tab>
+  
+  <Tab title="Context menu">
+    Right-click a staged file → **Unstage Changes**
+  </Tab>
+  
+  <Tab title="Unstage all">
+    Click the **−** button in the Staged Changes section header.
+  </Tab>
+</Tabs>
+
+## Committing changes
+
+<Steps>
+  <Step title="Stage files">
+    Ensure the files you want to commit are in the **Staged Changes** section.
+  </Step>
+  
+  <Step title="Write commit message">
+    Type a descriptive commit message in the text area at the top of the Source Control panel.
+  </Step>
+  
+  <Step title="Commit">
+    Click the **Commit** button or press `Ctrl+Enter`.
+  </Step>
+</Steps>
+
+<Note>
+  If you commit without staging any files, DAWNO automatically stages all changes (like `git commit -a`).
+</Note>
+
+## Viewing diffs
+
+See exactly what changed in a file:
+
+1. Click any file in the Source Control panel
+2. A **diff modal** opens showing:
+   - **Left side**: Original content
+   - **Right side**: Modified content
+   - **Highlighted**: Added (green) and removed (red) lines
+
+<Accordion title="Diff modal features">
+  - Syntax highlighting in both panes
+  - Side-by-side comparison
+  - Line numbers for easy navigation
+  - Scroll synchronization
+  - Close with **Esc** or the close button
+</Accordion>
+
+## Push and pull
+
+### Pull from remote
+
+Click the **↓ Pull** button in the Source Control header to fetch and merge changes from the remote repository.
+
+### Push to remote
+
+Click the **↑ Push** button to upload your local commits to the remote repository.
+
+<Info>
+  The Source Control panel shows incoming and outgoing commit counts when you have a remote configured.
+</Info>
+
+## Sync status
+
+DAWNO displays commit sync information:
+
+### Outgoing commits
+
+Commits you've made locally that haven't been pushed yet. Expand the **Outgoing** section to see the list.
+
+### Incoming commits
+
+Commits on the remote that you haven't pulled yet. Expand the **Incoming** section to view them.
+
+Click any commit to see its details and changed files.
+
+## Commit history
+
+View your project's Git history:
+
+<Steps>
+  <Step title="Expand commits section">
+    Click **Commits** in the Source Control panel to expand the commit log.
+  </Step>
+  
+  <Step title="Browse history">
+    The most recent 50 commits are displayed with their hash and message.
+  </Step>
+  
+  <Step title="View commit details">
+    Click any commit to open a modal showing:
+    - Full commit hash
+    - Commit message
+    - List of changed files with status
+    - Click any file to view its diff
+  </Step>
+</Steps>
+
+## Stashing changes
+
+Temporarily save uncommitted changes:
+
+### Stash
+
+Click the **Stash** icon (box) in the Source Control header to save your current changes and revert to a clean working directory.
+
+### Stash pop
+
+Click the **Stash Pop** icon (box with arrow up) to restore the most recent stash and remove it from the stash stack.
+
+<Note>
+  Stashing is useful when you need to switch branches or pull updates without committing incomplete work.
+</Note>
+
+## Discarding changes
+
+Revert uncommitted modifications:
+
+1. Hover over a file in the **Changes** section
+2. Click the **undo** (circular arrow) icon
+3. The file reverts to its last committed state
+
+<Warning>
+  Discarding changes is permanent and cannot be undone. Use with caution.
+</Warning>
+
+Alternatively:
+- Right-click a file → **Discard Changes**
+
+## Managing .gitignore
+
+Control which files Git tracks:
+
+### Add to .gitignore
+
+1. Right-click any file in Source Control
+2. Select **Add to .gitignore**
+3. The file path is appended to `.gitignore`
+
+### Remove from .gitignore
+
+1. Right-click a file already in `.gitignore`
+2. Select **Remove from .gitignore**
+3. The entry is deleted from `.gitignore`
+
+<Accordion title="Example .gitignore for SA-MP projects">
+  ```gitignore
+  # Compiled outputs
+  *.amx
+  
+  # Server logs
+  server_log.txt
+  
+  # DAWNO workspace
+  .dawno/
+  
+  # Crashinfo
+  crashinfo.txt
+  ```
+</Accordion>
+
+## Branch indicator
+
+The status bar shows your current Git branch:
+
+- **Branch name** displayed on the left side
+- Click to quickly identify which branch you're working on
+
+## File context menu
+
+Right-click any file in the Source Control panel for additional options:
+
+| Option | Description |
+|--------|-------------|
+| **Open Changes** | View the diff modal |
+| **Open File** | Open the file in the editor |
+| **Open File (HEAD)** | View the last committed version in Output |
+| **Discard Changes** | Revert to last commit |
+| **Stage Changes** | Add to staging area |
+| **Unstage Changes** | Remove from staging area |
+| **Add to .gitignore** | Ignore this file |
+| **Remove from .gitignore** | Stop ignoring this file |
+| **Reveal in File Explorer** | Open Windows Explorer at file location |
+
+## Refresh
+
+Git status updates automatically every 5 seconds. To manually refresh:
+
+Click the **Refresh** icon (circular arrows) in the Source Control header.
+
+## Git requirements
+
+DAWNO requires Git to be installed on your system:
+
+<Steps>
+  <Step title="Check installation">
+    Open Command Prompt and run `git --version`
+  </Step>
+  
+  <Step title="Install if needed">
+    Download Git from [git-scm.com](https://git-scm.com/download/win) and install.
+  </Step>
+  
+  <Step title="Restart DAWNO">
+    Restart DAWNO after installing Git for the integration to work.
+  </Step>
+</Steps>
+
+<Info>
+  DAWNO uses the system Git executable. No additional configuration is needed.
+</Info>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Server management" icon="server" href="/guide/server-management">
+    Run SA-MP and open.mp servers
+  </Card>
+  <Card title="Keyboard shortcuts" icon="keyboard" href="/guide/keyboard-shortcuts">
+    Speed up your workflow
+  </Card>
+</CardGroup>

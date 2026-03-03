@@ -1,0 +1,312 @@
+---
+title: useEditorBridge
+description: Handle IPC communication between renderer and main process for file operations and compilation
+---
+
+## Overview
+
+The `useEditorBridge` hook manages inter-process communication (IPC) between the renderer process and the main Electron process. It handles file save requests, compilation events, and external file opening through custom DOM events and the `window.api` bridge.
+
+This hook is automatically invoked in the main editor component and doesn't need to be called manually in most cases.
+
+## Import
+
+```typescript
+import { useEditorBridge } from '@/hooks/useEditorBridge';
+```
+
+## Usage
+
+```typescript
+function EditorLayout() {
+  // Automatically sets up IPC listeners for save, compile, and file open events
+  useEditorBridge();
+  
+  return <EditorPanel />;
+}
+```
+
+## Return value
+
+<ResponseField name="void" type="void">
+  This hook does not return any value. It sets up event listeners and manages IPC communication internally.
+</ResponseField>
+
+## Dependencies
+
+The hook relies on the following context values from `EditorContext`:
+
+<ParamField path="tabs" type="TabState[]" required>
+  Array of open editor tabs
+</ParamField>
+
+<ParamField path="activeTabId" type="number | null" required>
+  ID of the currently active tab
+</ParamField>
+
+<ParamField path="setActiveTabId" type="(id: number | null) => void" required>
+  Function to change the active tab
+</ParamField>
+
+<ParamField path="createTab" type="(name: string, path: string | null, content: string) => TabState | null" required>
+  Function to create a new editor tab
+</ParamField>
+
+<ParamField path="updateTab" type="(id: number, changes: Partial<TabState>) => void" required>
+  Function to update tab properties
+</ParamField>
+
+<ParamField path="settings" type="AppSettings" required>
+  Application settings including compiler path and include paths
+</ParamField>
+
+<ParamField path="currentEncoding" type="string" required>
+  Current file encoding (e.g., 'utf-8', 'windows-1252')
+</ParamField>
+
+<ParamField path="appendOutput" type="(text: string, type?: 'info' | 'error' | 'warning' | 'success', clickable?: boolean, filePath?: string) => void" required>
+  Function to append messages to the output panel
+</ParamField>
+
+<ParamField path="clearOutput" type="() => void" required>
+  Function to clear the output panel
+</ParamField>
+
+## Event handlers
+
+### Save request handler
+
+Listens for `dawno:save-request` custom DOM events:
+
+<CodeGroup>
+```typescript Event structure
+interface SaveRequestEvent {
+  detail: {
+    isSaveAs: boolean; // true for Save As, false for Save
+  }
+}
+```
+
+```typescript Dispatching the event
+// Trigger a save operation
+document.dispatchEvent(
+  new CustomEvent('dawno:save-request', { 
+    detail: { isSaveAs: false } 
+  })
+);
+
+// Trigger a "Save As" operation
+document.dispatchEvent(
+  new CustomEvent('dawno:save-request', { 
+    detail: { isSaveAs: true } 
+  })
+);
+```
+</CodeGroup>
+
+<Note>
+  If the active tab is dirty (modified), the hook automatically saves it before processing the save request. For new files without a path, a file dialog is shown.
+</Note>
+
+### Compile handler
+
+Listens for `dawno:compile` custom DOM events:
+
+<CodeGroup>
+```typescript Dispatching the event
+// Trigger compilation
+document.dispatchEvent(new CustomEvent('dawno:compile'));
+```
+
+```typescript Compilation flow
+// 1. Validates active tab has a file path
+// 2. Auto-saves if tab is dirty
+// 3. Checks compiler path is configured
+// 4. Clears output panel
+// 5. Calls window.api.compileFile()
+// 6. Parses output for errors/warnings
+// 7. Displays results in output panel
+```
+</CodeGroup>
+
+### External file open handler
+
+Listens for files opened externally (file associations, double-click, second instance):
+
+```typescript
+window.api.onOpenFile(async (filePath: string) => {
+  // Reads file content
+  // Creates new tab with file content
+  // Shows error if file cannot be opened
+});
+```
+
+## IPC API methods used
+
+The hook communicates with the main process through these `window.api` methods:
+
+<ResponseField name="window.api.saveFile" type="function">
+  ```typescript
+  saveFile(data: {
+    filePath: string | null;
+    content: string;
+    encoding: string;
+  }): Promise<string | null>
+  ```
+  
+  Saves file content to disk. Returns the saved file path or null if cancelled.
+</ResponseField>
+
+<ResponseField name="window.api.compileFile" type="function">
+  ```typescript
+  compileFile(data: {
+    filePath: string;
+    compilerPath: string;
+    includePaths: string[];
+  }): Promise<{
+    success: boolean;
+    output: string;
+    code?: number;
+  }>
+  ```
+  
+  Compiles a PAWN file using the configured compiler.
+</ResponseField>
+
+<ResponseField name="window.api.readFile" type="function">
+  ```typescript
+  readFile(
+    filePath: string,
+    encoding: string
+  ): Promise<{
+    content: string | null;
+    error: string | null;
+  }>
+  ```
+  
+  Reads file content from disk with specified encoding.
+</ResponseField>
+
+<ResponseField name="window.api.onOpenFile" type="function">
+  ```typescript
+  onOpenFile(
+    callback: (filePath: string) => void
+  ): () => void
+  ```
+  
+  Registers a listener for external file open requests. Returns a cleanup function.
+</ResponseField>
+
+## Error handling
+
+### Compilation errors
+
+The hook parses compiler output to detect errors and warnings:
+
+```typescript
+// Matches patterns like: (filename:line) : error 001: expected token
+const match = line.match(/\(([^)]+)\)\s*:\s*(error|warning)/);
+
+if (match) {
+  // Makes the output line clickable
+  appendOutput(line, match[2] as 'error' | 'warning', true, activeTab.path);
+} else {
+  appendOutput(line, 'error');
+}
+```
+
+### Save errors
+
+```typescript
+if (!savedPath) {
+  console.warn('Save operation cancelled or failed (no path returned).');
+}
+```
+
+### File open errors
+
+```typescript
+if (res.error || res.content === null) {
+  appendOutput(
+    `Failed to open external file: ${res.error || 'Unknown error'}`,
+    'error'
+  );
+  return;
+}
+```
+
+## Implementation details
+
+### Cleanup
+
+The hook properly cleans up event listeners when the component unmounts:
+
+```typescript
+return () => {
+  document.removeEventListener('dawno:save-request', handleSaveRequest);
+  document.removeEventListener('dawno:compile', handleCompile);
+  removeOpenFileListener();
+};
+```
+
+### Dependencies array
+
+The effect re-runs when these dependencies change:
+
+```typescript
+[tabs, activeTabId, updateTab, settings, currentEncoding, 
+ appendOutput, clearOutput, createTab, setActiveTabId]
+```
+
+<Note>
+  The hook only runs in the browser environment. It checks for `window.api` availability before setting up listeners.
+</Note>
+
+## Example: Full integration
+
+```typescript
+import { useEditorBridge } from '@/hooks/useEditorBridge';
+import { EditorProvider } from '@/context/EditorContext';
+
+function App() {
+  return (
+    <EditorProvider>
+      <EditorLayout />
+    </EditorProvider>
+  );
+}
+
+function EditorLayout() {
+  // Set up IPC bridge
+  useEditorBridge();
+  
+  const handleCompileClick = () => {
+    // Trigger compilation via custom event
+    document.dispatchEvent(new CustomEvent('dawno:compile'));
+  };
+  
+  const handleSaveClick = () => {
+    // Trigger save via custom event
+    document.dispatchEvent(
+      new CustomEvent('dawno:save-request', { 
+        detail: { isSaveAs: false } 
+      })
+    );
+  };
+  
+  return (
+    <div>
+      <button onClick={handleSaveClick}>Save</button>
+      <button onClick={handleCompileClick}>Compile (F5)</button>
+      <EditorPanel />
+      <OutputPanel />
+    </div>
+  );
+}
+```
+
+## Related hooks
+
+- [useFileOperations](/hooks/use-file-operations) - High-level file operation functions
+- [useSettings](/hooks/use-settings) - Application settings management
+- [useKeyboardShortcuts](/hooks/use-keyboard-shortcuts) - Keyboard shortcuts that trigger these events

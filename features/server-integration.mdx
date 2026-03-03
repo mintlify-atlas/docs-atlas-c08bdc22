@@ -1,0 +1,294 @@
+---
+title: Server integration
+description: Automatic SA-MP/open.mp server detection and management with live console output
+---
+
+DAWNO automatically detects SA-MP and open.mp servers in your project folder and provides a built-in server manager to start, stop, and monitor your test server.
+
+## Overview
+
+The server integration allows you to:
+
+<CardGroup cols={2}>
+  <Card title="Auto-detection" icon="magnifying-glass">
+    Automatically finds samp-server.exe or omp-server.exe in your project
+  </Card>
+  <Card title="Server control" icon="play">
+    Start, stop, and restart your server from the editor
+  </Card>
+  <Card title="Live console" icon="terminal">
+    View real-time server logs and output
+  </Card>
+  <Card title="Status monitoring" icon="signal">
+    See online/offline status at a glance
+  </Card>
+</CardGroup>
+
+## Server manager
+
+### Opening the manager
+
+Access the server manager by:
+
+1. Clicking the **Server** button in the toolbar
+2. Using the **Build > Server Manager** menu
+3. Pressing the server keyboard shortcut
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:53-112`
+
+### Server detection
+
+DAWNO automatically searches the current project folder for:
+
+- `samp-server.exe` (SA-MP server)
+- `omp-server.exe` (open.mp server)
+
+The detected path is displayed in the Server Control section.
+
+<Tip>
+If your server executable is in a different location, use the "Change Path" button to manually select it.
+</Tip>
+
+### Changing server path
+
+1. Click **Change Path** in the Server Manager
+2. Browse for the server executable (`.exe` file)
+3. Selected path is saved for the current project
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:45-51`
+
+## Server control
+
+### Start server
+
+Click the **Start Server** button (▶ icon):
+
+- Server process launches
+- Status changes to **ONLINE** (green badge)
+- Console output starts streaming
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:30-34`
+
+<Note>
+The Start button is disabled when the server is already running or no server path is detected.
+</Note>
+
+### Stop server
+
+Click the **Stop** button (■ icon):
+
+- Server process terminates gracefully
+- Status changes to **OFFLINE** (gray badge)
+- Console output stops
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:36-38`
+
+### Restart server
+
+Click the **Restart** button (🔄 icon):
+
+- Server stops
+- Server starts again automatically
+- Useful for testing script changes
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:40-43`
+
+<Tip>
+Use restart after compiling your script to test changes immediately.
+</Tip>
+
+## Console output
+
+### Live log viewer
+
+The Server Manager displays real-time console output:
+
+- Server startup messages
+- Script print() and printf() output
+- Player connections/disconnections
+- Errors and warnings
+- Plugin load messages
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:93-103`
+
+### Log streaming
+
+Logs are streamed in real-time:
+
+- New messages appear automatically
+- Scrolls to bottom on new output
+- Color-coded by log type
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:26-28`
+
+### Clear logs
+
+Click the **Clear** button above the console to remove all log entries.
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:96`
+
+## Status monitoring
+
+### Status indicator
+
+The server status badge shows:
+
+- **ONLINE** (green): Server is running
+- **OFFLINE** (gray): Server is stopped
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:66-68`
+
+### Real-time updates
+
+Server status updates automatically when:
+
+- Server is started or stopped from DAWNO
+- Server crashes or exits unexpectedly
+- External tools start/stop the server
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:18-24`
+
+## Server manager UI
+
+### Control panel
+
+The manager modal includes:
+
+```
+┌─────────────────────────────────────┐
+│ Server Manager                  ✕   │
+├─────────────────────────────────────┤
+│ Server Control      [ONLINE/OFFLINE]│
+│ Path: C:\server\samp-server.exe     │
+│                                     │
+│ [▶ Start] [■ Stop] [🔄 Restart]    │
+│ [Change Path]                       │
+│                                     │
+│ CONSOLE OUTPUT           [Clear]    │
+│ ┌─────────────────────────────────┐ │
+│ │ Server log messages appear here │ │
+│ │ ...                             │ │
+│ └─────────────────────────────────┘ │
+│                                     │
+│                           [Close]   │
+└─────────────────────────────────────┘
+```
+
+### Server info display
+
+The top section shows:
+
+- Server Control heading
+- Detected/selected server path
+- Current status badge (ONLINE/OFFLINE)
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:61-69`
+
+### Control buttons
+
+Three primary action buttons:
+
+| Button | Icon | Action | Enabled when |
+|--------|------|--------|-------------|
+| Start Server | ▶ | Starts the server | Server is offline and path is set |
+| Stop | ■ | Stops the server | Server is online |
+| Restart | 🔄 | Restarts the server | Path is set |
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:71-91`
+
+## Error handling
+
+### Failed to start
+
+If the server fails to start:
+
+- Error message appears in the Output panel
+- Detailed error reason is shown
+- Status remains OFFLINE
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:33`
+
+### Server not detected
+
+When no server is found:
+
+- Path display shows "Not detected"
+- Start and Restart buttons are disabled
+- Use "Change Path" to manually select server
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:64`
+
+<Info>
+Make sure your server executable (samp-server.exe or omp-server.exe) is in the root of your project folder for automatic detection.
+</Info>
+
+## Integration with workflow
+
+### Typical development workflow
+
+1. Edit your PAWN script in the Monaco editor
+2. Press `F5` to compile the script
+3. Check compilation output for errors
+4. Open Server Manager
+5. Start or restart the server
+6. Connect to test your changes
+7. View server logs for debugging
+
+### Compile and test cycle
+
+```
+Edit → Compile (F5) → Restart Server → Test → Repeat
+```
+
+<Tip>
+Keep the Server Manager open while developing to quickly restart after each compilation.
+</Tip>
+
+## Server process management
+
+### Process lifecycle
+
+DAWNO manages the server process:
+
+- Spawns server as a child process
+- Captures stdout and stderr streams
+- Monitors process exit events
+- Cleans up on application close
+
+### Status change events
+
+The editor listens for server status changes:
+
+- Updates UI badges and buttons
+- Enables/disables controls based on state
+- Provides visual feedback during state transitions
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:18-24`
+
+### Log streaming architecture
+
+Server logs are streamed via IPC:
+
+- Main process captures server output
+- Sends log entries to renderer process
+- Renderer updates UI in real-time
+- Auto-scrolls to latest message
+
+Implementation: `~/workspace/source/renderer/components/modals/ServerModal.tsx:14-16`
+
+## Internationalization
+
+The Server Manager is fully translated to 13 languages:
+
+- Button labels (Start Server, Stop, Restart, Change Path, Clear, Close)
+- Status indicators (Online, Offline)
+- Section headings (Server Control, Console Output)
+- Messages (Not detected, Waiting for logs, Failed to start)
+- File browser dialog (Select Server Executable, Executables)
+
+Implementation: See `~/workspace/source/renderer/i18n/locales/en.ts:336-353`
+
+## Related features
+
+- [Monaco editor](/features/monaco-editor) - Edit PAWN scripts with syntax highlighting
+- [Git source control](/features/git-source-control) - Version control for server projects

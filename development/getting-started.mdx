@@ -1,0 +1,316 @@
+---
+title: Getting started with development
+description: Set up your development environment and start contributing to DAWNO
+---
+
+This guide will help you set up a local development environment for DAWNO and understand the development workflow.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+<Steps>
+  <Step title="Install Node.js">
+    Download and install **Node.js 18 or higher** from [nodejs.org](https://nodejs.org/)
+    
+    Verify installation:
+    ```bash
+    node --version
+    npm --version
+    ```
+  </Step>
+
+  <Step title="Install Git">
+    Download and install Git from [git-scm.com](https://git-scm.com/)
+    
+    Verify installation:
+    ```bash
+    git --version
+    ```
+  </Step>
+
+  <Step title="Install code editor (optional)">
+    We recommend **Visual Studio Code** for TypeScript/React development, but any editor will work.
+  </Step>
+</Steps>
+
+## Clone the repository
+
+Clone the DAWNO repository to your local machine:
+
+```bash
+git clone https://github.com/deksdeveloper/dawno.git
+cd dawno
+```
+
+## Install dependencies
+
+DAWNO has a two-tier dependency structure:
+
+<CodeGroup>
+```bash Root dependencies
+# Install Electron and main process dependencies
+npm install
+```
+
+```bash Renderer dependencies
+# Install Next.js and React dependencies
+cd renderer
+npm install
+cd ..
+```
+</CodeGroup>
+
+<Tip>
+You can use the `postinstall` script to automatically install renderer dependencies:
+
+```bash
+npm install  # Automatically runs 'npm install --prefix renderer'
+```
+</Tip>
+
+## Development workflow
+
+### Running the development server
+
+DAWNO uses a dual-process development setup:
+
+<Steps>
+  <Step title="Start Next.js dev server">
+    In one terminal, start the Next.js development server:
+    
+    ```bash
+    npm run dev:next
+    ```
+    
+    This starts the renderer on `http://localhost:3000` with hot module replacement.
+  </Step>
+
+  <Step title="Launch Electron in dev mode">
+    In another terminal, launch the Electron app:
+    
+    ```bash
+    npm run dev
+    ```
+    
+    This builds the renderer once and starts Electron with the `--dev` flag.
+  </Step>
+</Steps>
+
+<Note>
+The `npm run dev` command automatically builds the renderer first, then launches Electron. It will attempt to connect to ports 3000-3005, falling back to the static build if no dev server is found.
+</Note>
+
+### Alternative: Integrated development
+
+For a simpler workflow, just run:
+
+```bash
+npm run dev
+```
+
+This will:
+1. Build the Next.js renderer to `/renderer/out`
+2. Launch Electron in development mode
+3. Load the static build (no hot reload, but simpler setup)
+
+<Info>
+For the best development experience with hot reload, run both `dev:next` and `dev` in separate terminals.
+</Info>
+
+## Project structure
+
+Understanding the codebase organization:
+
+```
+dawno/
+├── main.js                 # Electron main process (1194 lines)
+├── preload.js              # IPC bridge (security boundary)
+├── package.json            # Root dependencies (Electron, etc.)
+│
+├── renderer/               # Next.js frontend application
+│   ├── app/                # Next.js 13+ app directory
+│   ├── components/         # React components
+│   ├── context/            # React Context providers
+│   ├── hooks/              # Custom React hooks
+│   ├── i18n/               # Internationalization (13 languages)
+│   │   └── locales/        # Translation JSON files
+│   ├── lib/                # Utility functions
+│   ├── pawn-lib/           # PAWN language definitions
+│   ├── public/             # Static assets
+│   ├── styles/             # CSS modules
+│   ├── package.json        # Frontend dependencies
+│   └── next.config.ts      # Next.js configuration
+│
+├── assets/                 # Application icons and images
+│   ├── icon.ico            # Windows icon
+│   └── icon-256.png        # App window icon
+│
+├── scripts/                # Build automation
+│   ├── build-installer.js  # Inno Setup wrapper
+│   └── DAWNO.iss           # Windows installer config
+│
+└── dist/                   # Build output (generated)
+    └── DAWNO-win32-x64/    # Packaged application
+```
+
+## Key files to know
+
+### Main process
+
+- **`main.js`** - All Electron logic, IPC handlers, file system operations, Git integration
+- **`preload.js`** - Exposes safe APIs to renderer (security boundary)
+
+### Renderer process
+
+- **`renderer/app/page.tsx`** - Main application entry point
+- **`renderer/components/`** - Reusable UI components
+- **`renderer/context/`** - Global state management (settings, workspace, i18n)
+- **`renderer/hooks/`** - Custom React hooks for IPC communication
+
+### Configuration
+
+- **`package.json`** - Main process dependencies and npm scripts
+- **`renderer/package.json`** - Frontend dependencies
+- **`renderer/next.config.ts`** - Next.js build configuration
+- **`renderer/tsconfig.json`** - TypeScript compiler options
+
+## Making changes
+
+### Frontend changes (React/Next.js)
+
+1. Edit files in `renderer/` directory
+2. If `dev:next` is running, see changes instantly via hot reload
+3. Test in the Electron window
+
+### Main process changes (Electron)
+
+1. Edit `main.js` or `preload.js`
+2. Restart Electron (Ctrl+C and re-run `npm run dev`)
+3. No hot reload for main process - full restart required
+
+<Tip>
+Use `console.log()` in `main.js` - output appears in the terminal where you ran `npm run dev`.
+
+Use `console.log()` in renderer code - output appears in DevTools (View → Toggle Developer Tools).
+</Tip>
+
+### Adding new IPC handlers
+
+To add communication between renderer and main process:
+
+<Steps>
+  <Step title="Add handler in main.js">
+    ```javascript
+    ipcMain.handle('my-new-feature', async (event, args) => {
+      // Your logic here
+      return { success: true, data: 'result' };
+    });
+    ```
+  </Step>
+
+  <Step title="Expose in preload.js">
+    ```javascript
+    contextBridge.exposeInMainWorld('api', {
+      myNewFeature: (args) => ipcRenderer.invoke('my-new-feature', args)
+    });
+    ```
+  </Step>
+
+  <Step title="Call from renderer">
+    ```typescript
+    const result = await window.api.myNewFeature({ param: 'value' });
+    ```
+  </Step>
+</Steps>
+
+## Testing your changes
+
+### Manual testing
+
+1. **File operations** - Test open, save, encoding switches
+2. **Compilation** - Test with different PAWN scripts
+3. **Git integration** - Test in a git repository
+4. **Server management** - Test with SA-MP/open.mp server
+5. **Window controls** - Test minimize, maximize, close
+
+### Cross-platform considerations
+
+- File paths: Use `path.join()` for cross-platform compatibility
+- Line endings: Test with both LF (Unix) and CRLF (Windows) files
+- Executables: Server/compiler detection varies by OS
+
+## Debugging
+
+### Renderer process (DevTools)
+
+Press **F12** or **Ctrl+Shift+I** to open Chrome DevTools:
+
+- Console for logs and errors
+- Sources for breakpoints
+- Network for resource loading
+- React DevTools (if installed)
+
+### Main process (Node.js)
+
+Launch with debugging enabled:
+
+```bash
+electron --inspect=5858 . --dev
+```
+
+Then connect with Chrome DevTools or VS Code debugger.
+
+### Verbose logging
+
+Enable Electron logging:
+
+```bash
+set ELECTRON_ENABLE_LOGGING=1  # Windows
+ELECTRON_ENABLE_LOGGING=1 npm run dev  # Unix
+```
+
+## Common development tasks
+
+### Adding a new language
+
+1. Create `renderer/i18n/locales/[language-code].json`
+2. Copy structure from `en.json`
+3. Translate all strings
+4. Add to language selector component
+
+### Updating Monaco Editor
+
+```bash
+cd renderer
+npm update @monaco-editor/react monaco-editor
+```
+
+### Adding new dependencies
+
+<CodeGroup>
+```bash Main process
+# For Node.js/Electron features
+npm install package-name
+```
+
+```bash Renderer
+# For React/UI features
+cd renderer
+npm install package-name
+```
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/development/architecture">
+    Deep dive into DAWNO's technical architecture
+  </Card>
+  <Card title="Building" icon="hammer" href="/development/building">
+    Learn how to build and package the application
+  </Card>
+  <Card title="Contributing" icon="code-pull-request" href="/development/contributing">
+    Read the contribution guidelines
+  </Card>
+</CardGroup>

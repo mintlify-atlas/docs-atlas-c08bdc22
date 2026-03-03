@@ -1,0 +1,391 @@
+---
+title: useDiscordRpc
+description: Discord Rich Presence integration for showing current editing status
+---
+
+## Overview
+
+The `useDiscordRpc` hook manages Discord Rich Presence integration for DAWNO. It displays what file you're editing and which project you're working on in your Discord status, allowing other developers to see your current activity.
+
+The hook automatically updates Discord status when you switch tabs, open files, or change folders, and respects the user's privacy settings.
+
+## Import
+
+```typescript
+import { useDiscordRpc } from '@/hooks/useDiscordRpc';
+```
+
+## Usage
+
+```typescript
+import { useDiscordRpc } from '@/hooks/useDiscordRpc';
+import { EditorProvider } from '@/context/EditorContext';
+
+function App() {
+  return (
+    <EditorProvider>
+      <EditorLayout />
+    </EditorProvider>
+  );
+}
+
+function EditorLayout() {
+  // Automatically manages Discord Rich Presence
+  useDiscordRpc();
+  
+  return <Editor />;
+}
+```
+
+## Return value
+
+<ResponseField name="void" type="void">
+  This hook does not return any value. It manages Discord RPC internally based on context state.
+</ResponseField>
+
+## Dependencies
+
+The hook uses the following context values from `EditorContext`:
+
+<ParamField path="tabs" type="TabState[]" required>
+  Array of open editor tabs
+</ParamField>
+
+<ParamField path="activeTabId" type="number | null" required>
+  ID of the currently active tab
+</ParamField>
+
+<ParamField path="currentFolderPath" type="string | null" required>
+  Path to the currently open workspace folder
+</ParamField>
+
+<ParamField path="settings" type="AppSettings" required>
+  Application settings (specifically `settings.discordRPC`)
+</ParamField>
+
+## Discord Rich Presence states
+
+The hook displays different status messages based on the current state:
+
+### Editing a file in a folder
+
+```typescript
+{
+  details: "Editing: script.pwn",
+  state: "in my-gamemode",
+  largeImageKey: "logo",
+  largeImageText: "DAWNO Editor"
+}
+```
+
+Shows when:
+- A file is open (`activeTabName` is set)
+- A folder is open (`currentFolderPath` is set)
+
+### Editing a file without folder
+
+```typescript
+{
+  details: "Editing: script.pwn",
+  state: "DAWNO Editor",
+  largeImageKey: "logo",
+  largeImageText: "DAWNO Editor"
+}
+```
+
+Shows when:
+- A file is open (`activeTabName` is set)
+- No folder is open
+
+### Browsing a folder
+
+```typescript
+{
+  details: "DAWNO Editor",
+  state: "Browsing: my-gamemode",
+  largeImageKey: "logo",
+  largeImageText: "DAWNO Editor"
+}
+```
+
+Shows when:
+- No active file
+- A folder is open
+
+### Idle state
+
+```typescript
+{
+  details: "DAWNO Editor",
+  state: "Idle",
+  largeImageKey: "logo",
+  largeImageText: "DAWNO Editor"
+}
+```
+
+Shows when:
+- No active file
+- No open folder
+
+## Privacy and settings
+
+The hook respects the `discordRPC` setting:
+
+```typescript
+const enabled = settings.discordRPC !== false; // Enabled by default
+
+if (!enabled) {
+  window.api.toggleRPC(false); // Disconnect from Discord
+  return;
+}
+
+window.api.toggleRPC(true); // Connect to Discord
+```
+
+Users can disable Discord Rich Presence in settings:
+
+```typescript
+// Disable Discord RPC
+await window.api.saveSettings({ discordRPC: false });
+
+// Enable Discord RPC
+await window.api.saveSettings({ discordRPC: true });
+```
+
+## Update optimization
+
+The hook uses a ref to prevent redundant Discord API calls:
+
+```typescript
+const lastUpdateRef = useRef<string>('');
+
+const updateKey = `${details}|${state}`;
+
+// Only update if status actually changed
+if (updateKey === lastUpdateRef.current) return;
+
+lastUpdateRef.current = updateKey;
+
+window.api.updateRPC({ details, state, ... });
+```
+
+This prevents unnecessary RPC updates when:
+- Component re-renders without state changes
+- Tab scrolling or cursor movement occurs
+- Other unrelated context updates happen
+
+## Implementation details
+
+### Active tab tracking
+
+The hook explicitly derives active tab details for proper dependency tracking:
+
+```typescript
+const activeTab = tabs.find(t => t.id === activeTabId);
+const activeTabName = activeTab?.name ?? null;
+const activeTabPath = activeTab?.path ?? null;
+
+useEffect(() => {
+  // Effect runs when activeTabName or activeTabPath changes
+}, [activeTabId, activeTabName, activeTabPath, currentFolderPath, settings.discordRPC]);
+```
+
+### Folder name extraction
+
+Extracts the folder name from the full path:
+
+```typescript
+const folderName = currentFolderPath
+  ? currentFolderPath.split(/[\\\/]/).pop() || currentFolderPath
+  : null;
+```
+
+Handles both Windows (`\`) and Unix (`/`) path separators.
+
+## IPC API methods used
+
+<ResponseField name="window.api.toggleRPC" type="function">
+  ```typescript
+  toggleRPC(enabled: boolean): void
+  ```
+  
+  Enables or disables Discord Rich Presence connection.
+</ResponseField>
+
+<ResponseField name="window.api.updateRPC" type="function">
+  ```typescript
+  updateRPC(data: {
+    details: string;
+    state: string;
+    largeImageKey: string;
+    largeImageText: string;
+    instance: boolean;
+  }): void
+  ```
+  
+  Updates the Discord Rich Presence activity.
+</ResponseField>
+
+## Discord RPC fields
+
+<ParamField path="details" type="string" required>
+  Primary status text (shown in bold)
+  
+  ```typescript
+  details: "Editing: script.pwn"
+  details: "DAWNO Editor"
+  ```
+</ParamField>
+
+<ParamField path="state" type="string" required>
+  Secondary status text (shown below details)
+  
+  ```typescript
+  state: "in my-gamemode"
+  state: "Browsing: my-project"
+  state: "Idle"
+  ```
+</ParamField>
+
+<ParamField path="largeImageKey" type="string" required>
+  Image key for the large image (must be uploaded to Discord Developer Portal)
+  
+  ```typescript
+  largeImageKey: "logo" // Shows DAWNO logo
+  ```
+</ParamField>
+
+<ParamField path="largeImageText" type="string" required>
+  Tooltip text when hovering over the large image
+  
+  ```typescript
+  largeImageText: "DAWNO Editor"
+  ```
+</ParamField>
+
+<ParamField path="instance" type="boolean" required>
+  Whether this is an instance-specific activity
+  
+  ```typescript
+  instance: false // Not instance-specific
+  ```
+</ParamField>
+
+## Example: Custom Discord status
+
+For advanced use cases, you can manually control Discord RPC:
+
+```typescript
+import { useEditorContext } from '@/context/EditorContext';
+
+function CustomDiscordStatus() {
+  const { settings } = useEditorContext();
+  
+  const setCustomStatus = () => {
+    if (settings.discordRPC === false) return;
+    
+    window.api.updateRPC({
+      details: 'Debugging gamemode',
+      state: 'Found a nasty bug',
+      largeImageKey: 'logo',
+      largeImageText: 'DAWNO Editor',
+      instance: false
+    });
+  };
+  
+  return <button onClick={setCustomStatus}>Set Custom Status</button>;
+}
+```
+
+<Note>
+  When using custom status updates, be aware that `useDiscordRpc` will override your custom status when tabs or folders change. Consider disabling the hook if you need full manual control.
+</Note>
+
+## Example: Status display in UI
+
+```typescript
+import { useEditorContext } from '@/context/EditorContext';
+
+function StatusBar() {
+  const { tabs, activeTabId, currentFolderPath, settings } = useEditorContext();
+  
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  const folderName = currentFolderPath?.split(/[\\\/]/).pop();
+  
+  if (!settings.discordRPC) {
+    return <div className="status">Discord RPC: Disabled</div>;
+  }
+  
+  return (
+    <div className="status">
+      {activeTab && (
+        <span>Editing: {activeTab.name}</span>
+      )}
+      {folderName && (
+        <span>in {folderName}</span>
+      )}
+      {!activeTab && !folderName && (
+        <span>Idle</span>
+      )}
+    </div>
+  );
+}
+```
+
+## Example: Toggle Discord RPC in settings
+
+```typescript
+import { useEditorContext } from '@/context/EditorContext';
+
+function DiscordSettings() {
+  const { settings, setSettings } = useEditorContext();
+  
+  const handleToggle = async (enabled: boolean) => {
+    // Update context
+    setSettings(prev => ({ ...prev, discordRPC: enabled }));
+    
+    // Persist to disk
+    await window.api.saveSettings({ discordRPC: enabled });
+    
+    // Hook will automatically call toggleRPC() on next effect run
+  };
+  
+  return (
+    <label>
+      <input
+        type="checkbox"
+        checked={settings.discordRPC !== false}
+        onChange={(e) => handleToggle(e.target.checked)}
+      />
+      Show activity in Discord
+    </label>
+  );
+}
+```
+
+## Troubleshooting
+
+### Discord not showing status
+
+1. Check that Discord desktop app is running
+2. Verify `settings.discordRPC` is not `false`
+3. Check Discord privacy settings (Activity Privacy)
+4. Ensure DAWNO is added to Discord's game list
+
+### Status not updating
+
+The hook has built-in update optimization. Status only updates when:
+- Active tab changes
+- Folder changes  
+- Settings change
+- Actual `details` or `state` text changes
+
+### Multiple instances
+
+Only one instance of DAWNO can connect to Discord RPC at a time. The most recently started instance will show its status.
+
+## Related hooks
+
+- [useSettings](/hooks/use-settings) - Loads the discordRPC setting
+- [useEditorBridge](/hooks/use-editor-bridge) - Manages tabs that RPC tracks
+- [useFileOperations](/hooks/use-file-operations) - Opens folders that RPC displays

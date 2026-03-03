@@ -1,0 +1,282 @@
+---
+title: Server management
+description: Start, stop, and monitor SA-MP and open.mp servers directly from DAWNO with the integrated server manager.
+---
+
+DAWNO includes an integrated server manager that detects, launches, and monitors SA-MP and open.mp servers without leaving the IDE.
+
+## Accessing the server manager
+
+Click the **Server** button in the toolbar to open the Server Manager modal.
+
+<Info>
+  The Server button shows a **green dot** indicator when a server is currently running.
+</Info>
+
+## Automatic server detection
+
+DAWNO automatically scans your workspace to find server executables:
+
+<Steps>
+  <Step title="Open a folder">
+    Open your SA-MP or open.mp server folder as a workspace (or any parent/child folder).
+  </Step>
+  
+  <Step title="Deep scan">
+    DAWNO searches up to 4 directory levels deep and 5 parent levels to locate:
+    - `omp-server.exe` (open.mp)
+    - `samp-server.exe` (SA-MP)
+  </Step>
+  
+  <Step title="Auto-configure">
+    Once detected, the server path is saved and displayed in the Server Manager.
+  </Step>
+</Steps>
+
+<Note>
+  Server detection runs automatically when you open a folder. No manual configuration is needed in most cases.
+</Note>
+
+## Manually setting server path
+
+If auto-detection fails, or you want to use a different server:
+
+1. Open the **Server Manager**
+2. Click **Change Path**
+3. Browse to your server executable (`omp-server.exe` or `samp-server.exe`)
+4. Select the file and click **Open**
+
+The new path is saved and used for future server operations.
+
+## Starting the server
+
+<Steps>
+  <Step title="Open Server Manager">
+    Click the **Server** button in the toolbar.
+  </Step>
+  
+  <Step title="Verify path">
+    Ensure the server path is detected or configured.
+  </Step>
+  
+  <Step title="Start">
+    Click the **▶ Start Server** button.
+  </Step>
+  
+  <Step title="Monitor logs">
+    Server console output appears in real-time in the **Console Output** section.
+  </Step>
+</Steps>
+
+<Info>
+  The server runs as a background process. You can continue editing while the server is running.
+</Info>
+
+## Stopping the server
+
+Click the **■ Stop** button in the Server Manager to gracefully terminate the server process.
+
+The console output shows the exit code when the server shuts down.
+
+## Restarting the server
+
+Click the **Restart** button to:
+1. Stop the current server process
+2. Wait 1 second for cleanup
+3. Start a new server process
+
+This is useful for quickly testing changes to your gamemode.
+
+## Console output
+
+The Server Manager displays live server logs:
+
+<Tabs>
+  <Tab title="Output types">
+    - **Standard output** (stdout): Normal server messages
+    - **Error output** (stderr): Error messages in red
+    - **Info messages**: Server lifecycle events (started, stopped)
+  </Tab>
+  
+  <Tab title="Features">
+    - **Auto-scroll**: Console automatically scrolls to the latest message
+    - **Syntax**: Different message types are color-coded
+    - **Clear**: Click the **Clear** button to reset the console
+  </Tab>
+</Tabs>
+
+<Accordion title="Example console output">
+  ```
+  [Server] Started server on port 7777.
+  [Server] Loading filterscript 'admin.amx'...
+  [Server] Filterscript 'admin.amx' loaded.
+  [Server] Number of vehicle models: 212
+  ```
+</Accordion>
+
+## Server status badge
+
+The Server Manager displays the current server state:
+
+<Tabs>
+  <Tab title="Online">
+    **Green badge** with "Online" text indicates the server is running.
+  </Tab>
+  
+  <Tab title="Offline">
+    **Gray badge** with "Offline" text indicates the server is not running.
+  </Tab>
+</Tabs>
+
+The toolbar button also reflects this status with a green dot indicator.
+
+## Configuration editor
+
+DAWNO includes a dedicated editor for server configuration files:
+
+### Accessing the config editor
+
+Click the **Config** button in the toolbar to open the Configuration Editor modal.
+
+### Auto-detection
+
+DAWNO automatically detects server configuration files in your workspace:
+- `server.cfg` (SA-MP format)
+- `config.json` (open.mp format)
+
+The editor searches up to 4 levels deep and 5 parent levels.
+
+### Editing server.cfg
+
+For SA-MP servers using `server.cfg`:
+
+<Steps>
+  <Step title="Open config editor">
+    Click **Config** in the toolbar.
+  </Step>
+  
+  <Step title="View settings">
+    Settings are displayed in a table format with key-value pairs.
+  </Step>
+  
+  <Step title="Edit values">
+    Click any value to edit it inline.
+  </Step>
+  
+  <Step title="Save">
+    Click **Save** to write changes back to `server.cfg`.
+  </Step>
+</Steps>
+
+<Accordion title="Example server.cfg keys">
+  ```
+  hostname My SA-MP Server
+  gamemode0 mymode 1
+  port 7777
+  maxplayers 50
+  rcon_password changeme
+  ```
+</Accordion>
+
+### Editing config.json
+
+For open.mp servers using `config.json`:
+
+1. Open the Config Editor
+2. JSON data is parsed and displayed in a table
+3. Edit nested properties using the interface
+4. Save to update `config.json` with proper formatting
+
+<Note>
+  The config editor validates your changes and prevents invalid syntax from being saved.
+</Note>
+
+## Compiler integration
+
+The server manager works seamlessly with the compiler:
+
+<Steps>
+  <Step title="Compile your gamemode">
+    Press **F5** or click **Compile** in the toolbar to build your script.
+  </Step>
+  
+  <Step title="Check output">
+    Compilation results appear in the **Output Panel** below the editor.
+  </Step>
+  
+  <Step title="Restart server">
+    Click **Restart** in the Server Manager to load the updated `.amx` file.
+  </Step>
+  
+  <Step title="Test changes">
+    Connect to the server and test your changes.
+  </Step>
+</Steps>
+
+<Info>
+  DAWNO compiles scripts to `.amx` files in the same directory as the source `.pwn` file.
+</Info>
+
+## Server detection scope
+
+DAWNO's server detection algorithm:
+
+1. **Downward search**: Scans 4 directory levels deep from the opened folder
+2. **Upward search**: Searches up to 5 parent directories
+3. **Folder names**: Prioritizes common server folder structures
+
+<Accordion title="Typical detected structure">
+  ```
+  samp-server/
+  ├── omp-server.exe         ← Detected
+  ├── config.json            ← Detected
+  ├── gamemodes/
+  │   └── mymode.pwn         ← Your workspace folder
+  └── scriptfiles/
+  ```
+  
+  Opening `gamemodes/` successfully detects the server in the parent directory.
+</Accordion>
+
+## Troubleshooting
+
+### Server not detected
+
+<Steps>
+  <Step title="Check file exists">
+    Ensure `omp-server.exe` or `samp-server.exe` exists in your server directory.
+  </Step>
+  
+  <Step title="Manual configuration">
+    Use **Change Path** in the Server Manager to manually select the executable.
+  </Step>
+  
+  <Step title="Verify folder">
+    Ensure you've opened a folder that's within 5 levels of the server executable.
+  </Step>
+</Steps>
+
+### Server won't start
+
+- **Check permissions**: Ensure the executable has proper permissions
+- **Check port**: Verify port 7777 (or your configured port) is not already in use
+- **Check config**: Ensure `server.cfg` or `config.json` is valid
+- **View console**: Check the console output for error messages
+
+### Config not detected
+
+If the config editor doesn't find your configuration file:
+1. Ensure it's named exactly `server.cfg` or `config.json`
+2. Place it in the server root directory
+3. Click **Refresh** in the Config Editor
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Encoding support" icon="language" href="/guide/encoding-support">
+    Handle multiple character encodings
+  </Card>
+  <Card title="Keyboard shortcuts" icon="keyboard" href="/guide/keyboard-shortcuts">
+    Master DAWNO shortcuts
+  </Card>
+</CardGroup>

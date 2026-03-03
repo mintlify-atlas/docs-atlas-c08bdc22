@@ -1,0 +1,268 @@
+---
+title: Encoding support
+description: Work with multiple character encodings including Turkish, Cyrillic, Arabic, and more in DAWNO.
+---
+
+DAWNO provides comprehensive character encoding support, making it ideal for international SA-MP and open.mp development. Whether you're working with Turkish, Russian, Arabic, or other languages, DAWNO ensures your text is displayed and saved correctly.
+
+## Why encoding matters
+
+Character encoding defines how text characters are represented as bytes in a file. Using the wrong encoding can cause:
+- Garbled text (mojibake)
+- Lost special characters
+- Broken strings in-game
+
+DAWNO handles encoding intelligently to preserve your content.
+
+## Default encoding behavior
+
+<Steps>
+  <Step title="UTF-8 detection">
+    When opening a file, DAWNO first checks if it's valid UTF-8. If yes, it's loaded as UTF-8.
+  </Step>
+  
+  <Step title="Fallback encoding">
+    If not UTF-8, DAWNO uses your configured default encoding (Windows-1254 Turkish by default, or your choice).
+  </Step>
+  
+  <Step title="Auto-save encoding">
+    Files are saved with the same encoding they were opened with, unless you explicitly change it.
+  </Step>
+</Steps>
+
+<Info>
+  UTF-8 is recommended for new files as it supports all languages and is widely compatible.
+</Info>
+
+## Supported encodings
+
+DAWNO supports 19 character encodings:
+
+### Unicode encodings
+
+| Encoding | Description | Use Case |
+|----------|-------------|----------|
+| **UTF-8** | Universal | Modern standard, supports all languages |
+| **UTF-16LE** | Little Endian Unicode | Windows internal format |
+| **UTF-16BE** | Big Endian Unicode | Network protocols |
+
+### Windows code pages
+
+| Encoding | Language/Region | Common Use |
+|----------|-----------------|------------|
+| **Windows-1254** | Turkish | Turkish SA-MP servers |
+| **Windows-1252** | Western European | English, German, French |
+| **Windows-1251** | Cyrillic | Russian, Bulgarian |
+| **Windows-1250** | Central European | Polish, Czech, Hungarian |
+| **Windows-1253** | Greek | Greek servers |
+| **Windows-1255** | Hebrew | Hebrew servers |
+| **Windows-1256** | Arabic | Arabic servers |
+| **Windows-1257** | Baltic | Lithuanian, Latvian |
+| **Windows-1258** | Vietnamese | Vietnamese servers |
+
+### ISO encodings
+
+| Encoding | Description |
+|----------|-------------|
+| **ISO-8859-1** | Western (Latin-1) |
+| **ISO-8859-2** | Central European |
+| **ISO-8859-3** | South European |
+| **ISO-8859-4** | North European |
+| **ISO-8859-9** | Turkish |
+
+### DOS/IBM encodings
+
+| Encoding | Description |
+|----------|-------------|
+| **IBM850** | DOS Western European |
+| **IBM852** | DOS Central European |
+
+## Changing file encoding
+
+### Via status bar (quick)
+
+<Steps>
+  <Step title="Click encoding indicator">
+    In the bottom-right corner of the status bar, click the encoding name (e.g., **UTF-8**).
+  </Step>
+  
+  <Step title="Search and select">
+    A quick-pick menu appears. Type to search or scroll through encodings.
+  </Step>
+  
+  <Step title="Apply">
+    Click your desired encoding. The file is immediately re-read with the new encoding.
+  </Step>
+  
+  <Step title="Save to persist">
+    Press `Ctrl+S` to save the file with the new encoding.
+  </Step>
+</Steps>
+
+<Note>
+  Changing encoding re-interprets the file's raw bytes. If the current encoding is wrong, characters may appear garbled until you select the correct one.
+</Note>
+
+### Setting default encoding
+
+For files without UTF-8 encoding:
+
+1. Open **Settings** (`Ctrl+,`)
+2. Locate **Default Encoding** (if available in future versions)
+3. Select your preferred fallback encoding (e.g., Windows-1251 for Russian projects)
+
+Currently, the default is **Windows-1254** (Turkish), reflecting DAWNO's origin.
+
+## Encoding workflow examples
+
+### Turkish server development
+
+<Tabs>
+  <Tab title="New files">
+    1. Create a new file (`Ctrl+N`)
+    2. Type Turkish characters (ğ, ü, ş, ı, ö, ç)
+    3. Save as UTF-8 (default)
+    4. Turkish characters are preserved
+  </Tab>
+  
+  <Tab title="Legacy files">
+    1. Open an old `.pwn` file with Windows-1254 encoding
+    2. DAWNO auto-detects or uses Windows-1254 fallback
+    3. Turkish characters display correctly
+    4. Save to keep the same encoding
+  </Tab>
+</Tabs>
+
+### Russian server development
+
+<Accordion title="Working with Cyrillic">
+  1. Open a file with Russian text
+  2. If characters are garbled, click the encoding in the status bar
+  3. Select **Windows-1251** (Cyrillic)
+  4. Text displays correctly
+  5. Save with `Ctrl+S` to persist the encoding
+  
+  **Recommended**: Convert to UTF-8 for better compatibility:
+  1. Open the file in Windows-1251
+  2. Change encoding to UTF-8
+  3. Save the file
+</Accordion>
+
+### Arabic server development
+
+<Steps>
+  <Step title="Set encoding">
+    Open or create an Arabic PAWN file and set encoding to **Windows-1256** (Arabic).
+  </Step>
+  
+  <Step title="Type Arabic text">
+    Enter Arabic characters in strings:
+    ```pawn
+    SendClientMessage(playerid, -1, "مرحبا بك في الخادم");
+    ```
+  </Step>
+  
+  <Step title="Save">
+    Save as Windows-1256 or convert to UTF-8.
+  </Step>
+</Steps>
+
+<Note>
+  Right-to-left (RTL) text direction is determined by the game client, not the editor.
+</Note>
+
+## Encoding best practices
+
+<Tabs>
+  <Tab title="For new projects">
+    - **Use UTF-8** for all new files
+    - UTF-8 supports all languages simultaneously
+    - Most modern tools and SA-MP plugins support UTF-8
+    - Easier collaboration across different regions
+  </Tab>
+  
+  <Tab title="For existing projects">
+    - **Keep the original encoding** to avoid breaking existing content
+    - If migrating, test thoroughly in-game after converting
+    - Document the encoding in your project README
+  </Tab>
+  
+  <Tab title="For multi-language servers">
+    - **Always use UTF-8** to support multiple languages in one file
+    - Example: Turkish + English + Russian in the same script
+  </Tab>
+</Tabs>
+
+## Encoding in compilation
+
+The PAWN compiler (`pawncc.exe`) typically works with:
+- **Default**: System code page (often Windows-1252 on Western systems)
+- **Recommended**: UTF-8 for modern setups
+
+Ensure your compiler, DAWNO encoding, and server configuration all use compatible encodings.
+
+## Troubleshooting
+
+### Characters appear as ?
+
+**Cause**: Wrong encoding selected.
+
+**Solution**:
+1. Click the encoding indicator in the status bar
+2. Try encodings relevant to your language (e.g., Windows-1251 for Russian)
+3. The correct encoding should display characters properly
+
+### Mojibake (garbled text)
+
+**Cause**: File was saved with one encoding but opened with another.
+
+**Solution**:
+1. Identify the original encoding (often Windows-125x)
+2. Re-open with the correct encoding
+3. Consider converting to UTF-8 for future-proofing
+
+### Characters lost after save
+
+**Cause**: Saving with an encoding that doesn't support those characters.
+
+**Solution**:
+1. Always use UTF-8 for multi-language content
+2. Verify encoding before saving
+3. Test in-game after changing encoding
+
+### Encoding not remembered
+
+**Cause**: Encoding is file-specific, not stored persistently.
+
+**Solution**:
+After changing encoding, save the file immediately. The encoding is inferred from the file's byte content on next open.
+
+## Encoding indicator
+
+The status bar always shows the current file's encoding:
+
+- **Bottom-right corner**: Displays encoding name (e.g., **UTF-8**, **WINDOWS-1254**)
+- **Clickable**: Opens the encoding picker
+- **Per-file**: Each tab can have a different encoding
+
+<Info>
+  If no file is open, the status bar shows the default encoding (**UTF-8**).
+</Info>
+
+## Technical details
+
+DAWNO uses the **iconv-lite** library for encoding conversion, supporting:
+- Single-byte encodings (Windows, ISO, IBM)
+- Multi-byte encodings (UTF-8, UTF-16)
+- Automatic UTF-8 detection via byte-order-mark (BOM) or valid UTF-8 sequences
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Keyboard shortcuts" icon="keyboard" href="/guide/keyboard-shortcuts">
+    Learn all DAWNO shortcuts
+  </Card>
+  <Card title="Interface overview" icon="window" href="/guide/interface-overview">
+    Understand the IDE layout
+  </Card>
+</CardGroup>

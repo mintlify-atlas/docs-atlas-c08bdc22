@@ -1,0 +1,166 @@
+---
+title: Application settings
+description: Configure DAWNO's compiler, editor preferences, and integrations
+---
+
+Access application settings from the toolbar or menu to customize DAWNO to your workflow.
+
+## Opening settings
+
+Click the **Settings** button in the toolbar or select **Settings** from the main menu to open the settings modal.
+
+## Compiler settings
+
+Configure the PAWN compiler and include paths for your project.
+
+### Compiler path
+
+Specify the path to your `pawncc.exe` compiler.
+
+<Steps>
+  <Step title="Browse for compiler">
+    Click the **Browse** button next to the compiler path field
+  </Step>
+  <Step title="Select pawncc.exe">
+    Navigate to your PAWN compiler location (typically in `pawno` or `qawno` folder)
+  </Step>
+  <Step title="Confirm selection">
+    The path will be automatically filled in the compiler path field
+  </Step>
+</Steps>
+
+<Info>
+  DAWNO automatically searches for `pawncc.exe` in common locations when you open a folder, checking `pawno` and `qawno` directories up to 5 levels up in the folder hierarchy.
+</Info>
+
+### Include paths
+
+Add directories where the compiler should search for include files (`.inc`).
+
+<Steps>
+  <Step title="Add include path">
+    Click the **Add Path** button
+  </Step>
+  <Step title="Select directory">
+    Choose the folder containing your include files
+  </Step>
+  <Step title="Manage paths">
+    Remove paths by clicking the × button next to each entry
+  </Step>
+</Steps>
+
+<Note>
+  The compiler automatically includes:
+  - The `include` folder next to `pawncc.exe`
+  - The directory containing your current `.pwn` file
+</Note>
+
+## Editor preferences
+
+Customize the code editor appearance and behavior.
+
+### Font size
+
+Adjust the editor font size between 8px and 30px using the slider.
+
+**Default**: 14px
+
+### Minimap
+
+Toggle the code minimap in the editor's right sidebar.
+
+**Default**: Enabled
+
+<Accordion title="What is the minimap?">
+  The minimap provides a bird's-eye view of your entire file, allowing quick navigation to different sections of your code.
+</Accordion>
+
+### Word wrap
+
+Enable or disable automatic line wrapping for long lines of code.
+
+**Default**: Enabled
+
+### Auto-save
+
+Automatically save files after a period of inactivity.
+
+**Default**: Disabled
+
+<Warning>
+  When auto-save is enabled, files will be saved automatically without confirmation. Make sure this fits your workflow.
+</Warning>
+
+#### Auto-save delay
+
+When auto-save is enabled, configure the delay before saving (500ms to 5000ms).
+
+**Default**: 1000ms (1 second)
+
+## Integration settings
+
+### Discord Rich Presence
+
+Show your current DAWNO activity on Discord.
+
+**Default**: Enabled
+
+<Info>
+  When enabled, Discord will display:
+  - "DAWNO Editor" as your activity
+  - Your current editing state
+  - The DAWNO logo
+</Info>
+
+<Note>
+  Discord Rich Presence requires Discord to be running. DAWNO will automatically attempt to reconnect every 60 seconds if Discord is not detected.
+</Note>
+
+## Language
+
+Select your preferred interface language from the dropdown.
+
+**Available languages**:
+- English (en)
+- Arabic (ar)
+- German (de)
+- Spanish (es)
+- French (fr)
+- Italian (it)
+- Japanese (ja)
+- Korean (ko)
+- Portuguese (pt)
+- Russian (ru)
+- Turkish (tr)
+- Vietnamese (vi)
+- Chinese (zh)
+
+## Saving settings
+
+Click **Save Changes** to apply your settings. Settings are stored in:
+
+```
+%APPDATA%/DAWNO/settings.json
+```
+
+You'll see a success message in the output panel when settings are saved.
+
+<Accordion title="Settings file structure">
+  ```json
+  {
+    "compilerPath": "C:\\path\\to\\pawncc.exe",
+    "includePaths": [
+      "C:\\path\\to\\includes"
+    ],
+    "fontSize": 14,
+    "theme": "dark",
+    "defaultEncoding": "utf-8",
+    "discordRPC": true,
+    "language": "en",
+    "minimap": true,
+    "wordWrap": true,
+    "autoSave": false,
+    "autoSaveDelay": 1000
+  }
+  ```
+</Accordion>

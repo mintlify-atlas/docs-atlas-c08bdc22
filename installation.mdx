@@ -1,0 +1,233 @@
+---
+title: Installation
+description: Install DAWNO on your system and configure your development environment
+---
+
+# Installation
+
+DAWNO can be installed either by downloading a pre-built release or by building from source. This guide covers both methods.
+
+## System requirements
+
+<CardGroup cols={2}>
+  <Card title="Operating system" icon="windows">
+    Windows 7 or later (64-bit)
+  </Card>
+  <Card title="For development" icon="code">
+    Node.js 18+ and npm
+  </Card>
+</CardGroup>
+
+<Note>
+DAWNO is currently optimized for Windows. The server manager and PAWN compiler detection features are Windows-specific.
+</Note>
+
+## Download pre-built release
+
+The easiest way to get started with DAWNO is to download a pre-built installer.
+
+<Steps>
+  <Step title="Download the installer">
+    Visit the [DAWNO GitHub releases page](https://github.com/deksdeveloper/dawno/releases) and download the latest installer (`.exe` file).
+  </Step>
+  
+  <Step title="Run the installer">
+    Double-click the downloaded installer and follow the setup wizard. The installer will:
+    - Install DAWNO to your system
+    - Create desktop and start menu shortcuts
+    - Register `.pwn` file associations
+  </Step>
+  
+  <Step title="Launch DAWNO">
+    Launch DAWNO from the start menu or desktop shortcut. You'll be greeted with the welcome screen.
+  </Step>
+</Steps>
+
+### File associations
+
+The installer automatically registers `.pwn` file associations on Windows. After installation, you can:
+
+- Double-click `.pwn` files to open them in DAWNO
+- Right-click `.pwn` files and select "Open with DAWNO"
+
+<Note>
+File associations are registered in the Windows registry under `HKEY_CURRENT_USER\Software\Classes\.pwn`.
+</Note>
+
+## Build from source
+
+For developers who want to customize DAWNO or contribute to the project, you can build from source.
+
+### Prerequisites
+
+Before building, ensure you have:
+
+<CardGroup cols={2}>
+  <Card title="Node.js" icon="node-js">
+    Version 18 or higher
+  </Card>
+  <Card title="npm" icon="npm">
+    Node Package Manager (included with Node.js)
+  </Card>
+</CardGroup>
+
+### Clone and install
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/deksdeveloper/dawno.git
+    cd dawno
+    ```
+  </Step>
+  
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+    
+    This command installs all dependencies for both the Electron main process and the Next.js renderer.
+    
+    <Note>
+    The `postinstall` script automatically runs `npm install --prefix renderer` to install renderer dependencies.
+    </Note>
+  </Step>
+  
+  <Step title="Start in development mode">
+    ```bash
+    npm run dev
+    ```
+    
+    This will:
+    1. Build the Next.js renderer
+    2. Start Electron with the `--dev` flag
+    3. Load the development build
+  </Step>
+</Steps>
+
+### Development workflow
+
+When developing DAWNO, you have several npm scripts available:
+
+<CodeGroup>
+```bash Development mode
+npm run dev
+```
+
+```bash Next.js development server
+npm run dev:next
+```
+
+```bash Build Next.js renderer
+npm run build
+```
+
+```bash Start Electron (production)
+npm start
+```
+</CodeGroup>
+
+<Note>
+The development mode (`npm run dev`) automatically rebuilds the Next.js app before starting Electron.
+</Note>
+
+### Building a distribution
+
+To create a standalone executable and installer:
+
+<Steps>
+  <Step title="Run the package command">
+    ```bash
+    npm run package
+    ```
+    
+    This command performs the following steps:
+    1. Compiles the Next.js renderer to static files
+    2. Packages the Electron application for Windows x64
+    3. Invokes the Inno Setup compiler to generate a professional setup wizard
+  </Step>
+  
+  <Step title="Locate the output">
+    The resulting installer will be in the `scripts/Output/` directory.
+  </Step>
+</Steps>
+
+### Package configuration
+
+The build process uses:
+
+- **electron-packager**: Bundles the app for Windows x64
+- **Inno Setup**: Creates a professional installer with the script located at `scripts/DAWNO.iss`
+
+The packager ignores development files to keep the bundle size minimal:
+
+```json
+{
+  "ignore": "(^/dist|^/renderer/node_modules|^/renderer/src|^/renderer/app|^/renderer/components|^/renderer/context|^/renderer/hooks|^/renderer/lib|^/renderer/styles|^/renderer/pawn-lib|^/renderer/public|^/renderer/.next|^/renderer/tsconfig.json|^/renderer/next.config.ts|^/renderer/package-lock.json|^\\.git)"
+}
+```
+
+<Warning>
+Building the installer requires Inno Setup to be installed on your system. The `innosetup-compiler` package handles compilation.
+</Warning>
+
+## First launch configuration
+
+After installing DAWNO, you'll want to configure a few essential settings.
+
+<Steps>
+  <Step title="Set compiler path">
+    Open Settings (Ctrl+,) and navigate to the Compiler section. Browse to your `pawncc.exe` location.
+    
+    <Note>
+    DAWNO can automatically detect `pawncc.exe` in `pawno` or `qawno` folders when you open a project folder.
+    </Note>
+  </Step>
+  
+  <Step title="Configure include paths">
+    Add any custom include directories your projects use. Common locations:
+    - `pawno/include`
+    - `qawno/include`
+    - Custom libraries folder
+  </Step>
+  
+  <Step title="Choose your language">
+    Select your preferred language from the 13 available options in Settings > Integration > Language.
+  </Step>
+  
+  <Step title="Enable Discord Rich Presence (optional)">
+    Toggle Discord Rich Presence in Settings > Integration if you want to share your development activity.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Application won't start
+
+If DAWNO fails to start:
+
+- Ensure you have the latest Visual C++ Redistributable installed
+- Check Windows Event Viewer for error messages
+- Try running as administrator
+
+### Compiler not detected
+
+If the compiler isn't automatically detected:
+
+1. Manually set the compiler path in Settings
+2. Ensure `pawncc.exe` is accessible and not blocked by antivirus
+3. Verify the path doesn't contain special characters
+
+### Server executable not found
+
+If server detection fails:
+
+- DAWNO scans up to 4 directory levels from your opened folder
+- Ensure `samp-server.exe` or `omp-server.exe` is in a standard location
+- Manually select the server executable in Server Manager
+
+## Next steps
+
+<Card title="Quick start guide" icon="rocket" href="/quickstart">
+  Learn how to create your first PAWN script with DAWNO
+</Card>

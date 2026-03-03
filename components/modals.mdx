@@ -1,0 +1,548 @@
+---
+title: Modals
+description: Settings, server control, config editor, and encoding picker modals
+---
+
+DAWNO includes several modal components for configuration, server management, and editor settings.
+
+## Overview
+
+The modal components provide:
+
+- **SettingsModal**: Configure compiler paths, editor preferences, and integrations
+- **ServerModal**: Control SA-MP/open.mp server with live console output
+- **ConfigModal**: Edit server.cfg or config.json files in a table format
+- **EncodingPicker**: Quick encoding selection with search
+
+All modals use a consistent overlay pattern and support ESC key to close.
+
+---
+
+## SettingsModal
+
+The settings modal configures application-wide preferences.
+
+### Props
+
+```typescript
+interface SettingsModalProps {
+  onClose: () => void;
+}
+```
+
+<ParamField path="onClose" type="() => void" required>
+  Callback to close the modal
+</ParamField>
+
+### Settings sections
+
+<Tabs>
+  <Tab title="Compiler">
+    Configure PAWN compiler:
+    
+    **Compiler path**
+    - Text input with file browser
+    - Supports `.exe` files only
+    - Stored in `settings.compilerPath`
+    
+    **Include paths**
+    - List of include directories
+    - Add/remove paths with buttons
+    - Stored in `settings.includePaths` array
+    
+    ```typescript
+    <div className="settings-list">
+      {localSettings.includePaths?.map((path, idx) => (
+        <div key={idx} className="settings-list-item">
+          <span>{path}</span>
+          <button
+            className="btn-list-remove"
+            onClick={() => {
+              const next = [...localSettings.includePaths];
+              next.splice(idx, 1);
+              setLocalSettings({ ...localSettings, includePaths: next });
+            }}
+            title={t.settingsModal.remove}
+          >
+            &times;
+          </button>
+        </div>
+      ))}
+    </div>
+    ```
+  </Tab>
+  
+  <Tab title="Editor">
+    Configure editor appearance:
+    
+    **Font size**
+    - Range slider (8-30px)
+    - Live preview of current size
+    - Stored in `settings.fontSize`
+    
+    **Minimap**
+    - Checkbox to show/hide minimap
+    - Default: enabled
+    - Stored in `settings.minimap`
+    
+    **Word wrap**
+    - Checkbox to enable/disable word wrap
+    - Default: enabled
+    - Stored in `settings.wordWrap`
+    
+    **Auto-save**
+    - Checkbox to enable auto-save
+    - Configurable delay (500-5000ms)
+    - Default: disabled
+    - Stored in `settings.autoSave` and `settings.autoSaveDelay`
+    
+    ```typescript
+    {(localSettings.autoSave ?? false) && (
+      <div className="settings-row">
+        <label>{t.settingsModal.autoSaveDelay}</label>
+        <div className="settings-inline">
+          <input
+            type="range"
+            min="500"
+            max="5000"
+            step="250"
+            value={localSettings.autoSaveDelay ?? 1000}
+            onChange={e => setLocalSettings({ 
+              ...localSettings, 
+              autoSaveDelay: parseInt(e.target.value) 
+            })}
+          />
+          <span>{localSettings.autoSaveDelay ?? 1000}ms</span>
+        </div>
+      </div>
+    )}
+    ```
+  </Tab>
+  
+  <Tab title="Integration">
+    Third-party integrations:
+    
+    **Discord Rich Presence**
+    - Checkbox to enable/disable RPC
+    - Shows "Editing in DAWNO" status
+    - Stored in `settings.discordRPC`
+    - Immediately toggles RPC via IPC
+    
+    ```typescript
+    <input
+      id="rpc-check"
+      type="checkbox"
+      checked={localSettings.discordRPC}
+      onChange={e => {
+        setLocalSettings({ ...localSettings, discordRPC: e.target.checked });
+        window.api.toggleRPC(e.target.checked);
+      }}
+    />
+    ```
+  </Tab>
+  
+  <Tab title="Language">
+    Interface language selection:
+    
+    **Language**
+    - Dropdown with available languages
+    - Stored in `settings.language`
+    - Supported: English, Turkish, and more
+    
+    ```typescript
+    <select
+      value={localSettings.language ?? 'en'}
+      onChange={e => setLocalSettings({ 
+        ...localSettings, 
+        language: e.target.value 
+      })}
+    >
+      {(Object.entries(LANGUAGE_NAMES) as [Language, string][]).map(
+        ([code, name]) => (
+          <option key={code} value={code}>{name}</option>
+        )
+      )}
+    </select>
+    ```
+  </Tab>
+</Tabs>
+
+### Save behavior
+
+Settings are saved to disk and applied immediately:
+
+```typescript
+const handleSave = async () => {
+  const res = await window.api.saveSettings(localSettings);
+  if (res) {
+    setSettings(res);
+    appendOutput(t.settingsModal.savedSuccess, 'success');
+    onClose();
+  }
+};
+```
+
+---
+
+## ServerModal
+
+Controls SA-MP or open.mp server with live console output.
+
+### Props
+
+```typescript
+interface ServerModalProps {
+  onClose: () => void;
+}
+```
+
+### Features
+
+<Tabs>
+  <Tab title="Server Control">
+    **Status badge**
+    - Online/Offline indicator
+    - Real-time status updates
+    
+    **Control buttons**
+    - Start: Launch server executable
+    - Stop: Terminate server process
+    - Restart: Stop and start in sequence
+    - Change Path: Browse for different server executable
+    
+    ```typescript
+    const handleStart = async () => {
+      if (!detectedServerPath) return;
+      const res = await window.api.startServer(detectedServerPath);
+      if (!res.success) {
+        appendOutput(t.serverModal.failedToStart(res.error ?? ''), 'error');
+      }
+    };
+
+    const handleStop = async () => {
+      await window.api.stopServer();
+    };
+
+    const handleRestart = async () => {
+      if (!detectedServerPath) return;
+      await window.api.restartServer(detectedServerPath);
+    };
+    ```
+  </Tab>
+  
+  <Tab title="Console Output">
+    **Live logs**
+    - Real-time server console output
+    - Color-coded by type (stdout, stderr, info)
+    - Auto-scrolls to bottom
+    - Clear button to reset logs
+    
+    ```typescript
+    useEffect(() => {
+      const unsubLog = window.api.onServerLog((entry) => {
+        setLogs(prev => [...prev, entry]);
+      });
+
+      const unsubStatus = window.api.onServerStatusChange((running) => {
+        setServerRunning(running);
+      });
+
+      return () => {};
+    }, [setServerRunning]);
+
+    useEffect(() => {
+      if (logRef.current) {
+        logRef.current.scrollTop = logRef.current.scrollHeight;
+      }
+    }, [logs]);
+    ```
+  </Tab>
+</Tabs>
+
+### Server detection
+
+Server path is auto-detected from current folder:
+
+- Looks for `omp-server.exe` or `samp-server.exe`
+- Stored in context as `detectedServerPath` and `detectedServerType`
+- Can be manually changed via file browser
+
+---
+
+## ConfigModal
+
+Edits server configuration files in a table format.
+
+### Props
+
+```typescript
+interface ConfigModalProps {
+  onClose: () => void;
+}
+```
+
+### Supported formats
+
+<Tabs>
+  <Tab title="JSON">
+    **config.json** (open.mp)
+    
+    - Nested objects flattened with dot notation
+    - Arrays serialized as JSON strings
+    - Example: `network.port`, `pawn.main_scripts`
+    
+    ```typescript
+    const flattenObject = (obj: any, prefix = ''): Record<string, string> => {
+      let result: Record<string, string> = {};
+      for (const [k, v] of Object.entries(obj)) {
+        const key = prefix ? `${prefix}.${k}` : k;
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          result = { ...result, ...flattenObject(v, key) };
+        } else {
+          result[key] = Array.isArray(v) ? JSON.stringify(v) : String(v);
+        }
+      }
+      return result;
+    };
+    ```
+  </Tab>
+  
+  <Tab title="CFG">
+    **server.cfg** (SA-MP)
+    
+    - Key-value pairs (e.g., `port 7777`)
+    - One setting per row
+    - Example: `gamemode0`, `maxplayers`
+    
+    ```typescript
+    const rows = (res.type === 'json')
+      ? Object.entries(flattenObject(res.data)).map(([k, v]) => ({ key: k, value: v }))
+      : Object.entries(res.data).map(([k, v]) => ({ key: k, value: String(v) }));
+    ```
+  </Tab>
+</Tabs>
+
+### Table interface
+
+**Editable table**
+- Key column (setting name)
+- Value column (setting value)
+- Remove button (X) for each row
+- Add Row button at bottom
+
+```typescript
+<table className="config-table">
+  <thead>
+    <tr>
+      <th style={{ width: '40%' }}>{t.configModal.key}</th>
+      <th>{t.configModal.value}</th>
+      <th style={{ width: '40px' }}></th>
+    </tr>
+  </thead>
+  <tbody>
+    {configRows.map((row, i) => (
+      <tr key={i}>
+        <td>
+          <input 
+            type="text" 
+            value={row.key} 
+            onChange={e => updateRow(i, 'key', e.target.value)} 
+          />
+        </td>
+        <td>
+          <input 
+            type="text" 
+            value={row.value} 
+            onChange={e => updateRow(i, 'value', e.target.value)} 
+          />
+        </td>
+        <td style={{ textAlign: 'center' }}>
+          <button 
+            className="btn-remove-include" 
+            onClick={() => removeRow(i)}
+          >
+            &times;
+          </button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+```
+
+### Save behavior
+
+Unflatten and write back to file:
+
+```typescript
+const handleSave = async () => {
+  const flatData: Record<string, string> = {};
+  configRows.forEach(row => { 
+    if (row.key) flatData[row.key] = row.value; 
+  });
+
+  const finalData = (configType === 'json') 
+    ? unflattenObject(flatData) 
+    : flatData;
+
+  const res = await window.api.writeConfigFile(configPath, finalData, configType);
+  if (res.success) {
+    appendOutput(t.configModal.saved, 'success');
+    onClose();
+  } else {
+    appendOutput(t.configModal.errorSaving(res.error ?? ''), 'error');
+  }
+};
+```
+
+---
+
+## EncodingPicker
+
+Quick-pick modal for selecting file encoding.
+
+### Props
+
+```typescript
+interface EncodingPickerProps {
+  onClose: () => void;
+}
+```
+
+### Supported encodings
+
+Comprehensive encoding list:
+
+```typescript
+const ENCODINGS = [
+  { label: 'UTF-8', value: 'utf-8', desc: 'Unicode (Universal)' },
+  { label: 'Windows-1254', value: 'windows-1254', desc: 'Turkish' },
+  { label: 'Windows-1252', value: 'windows-1252', desc: 'Western European' },
+  { label: 'Windows-1251', value: 'windows-1251', desc: 'Cyrillic' },
+  { label: 'Windows-1250', value: 'windows-1250', desc: 'Central European' },
+  { label: 'ISO-8859-1', value: 'iso-8859-1', desc: 'Western' },
+  { label: 'UTF-16LE', value: 'utf-16le', desc: 'Unicode (Little Endian)' },
+  // ... and more
+];
+```
+
+### Search functionality
+
+Filter encodings by label or description:
+
+```typescript
+const [search, setSearch] = useState('');
+
+const filtered = ENCODINGS.filter(e =>
+  e.label.toLowerCase().includes(search.toLowerCase()) ||
+  e.desc.toLowerCase().includes(search.toLowerCase())
+);
+```
+
+### Keyboard navigation
+
+- **Type to filter**: Search automatically
+- **Enter**: Select first result
+- **Escape**: Close picker
+
+```typescript
+<input
+  autoFocus
+  type="text"
+  placeholder={t.encodingPicker.placeholder}
+  value={search}
+  onChange={e => setSearch(e.target.value)}
+  onKeyDown={e => {
+    if (e.key === 'Escape') onClose();
+    if (e.key === 'Enter' && filtered.length > 0) {
+      handleSelect(filtered[0].value);
+    }
+  }}
+/>
+```
+
+### Selection
+
+Applies encoding and shows confirmation:
+
+```typescript
+const handleSelect = (enc: string) => {
+  setCurrentEncoding(enc);
+  appendOutput(t.encodingPicker.encodingSet(enc.toUpperCase()), 'info');
+  onClose();
+};
+```
+
+---
+
+## Common modal pattern
+
+All modals follow this structure:
+
+```tsx
+<div className="modal-overlay" onClick={onClose}>
+  <div className="modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-header">
+      <div className="modal-title">Title</div>
+      <button className="modal-close" onClick={onClose}>&times;</button>
+    </div>
+    <div className="modal-body">
+      {/* Content */}
+    </div>
+    <div className="modal-footer">
+      <button className="btn-cancel" onClick={onClose}>Cancel</button>
+      <button className="btn-save-settings" onClick={handleSave}>Save</button>
+    </div>
+  </div>
+</div>
+```
+
+### Modal sizes
+
+- `.modal` - Standard width (~600px)
+- `.modal.wide` - Wider for tables and complex layouts (~800px)
+- `.quick-pick` - Narrow for pickers (~500px)
+
+## Usage examples
+
+```tsx
+import { useState } from 'react';
+import SettingsModal from './components/modals/SettingsModal';
+import ServerModal from './components/modals/ServerModal';
+import ConfigModal from './components/modals/ConfigModal';
+import EncodingPicker from './components/modals/EncodingPicker';
+
+function App() {
+  const [activeModal, setActiveModal] = useState<string | null>(null);
+  
+  return (
+    <>
+      <button onClick={() => setActiveModal('settings')}>Settings</button>
+      <button onClick={() => setActiveModal('server')}>Server</button>
+      <button onClick={() => setActiveModal('config')}>Config</button>
+      <button onClick={() => setActiveModal('encoding')}>Encoding</button>
+      
+      {activeModal === 'settings' && (
+        <SettingsModal onClose={() => setActiveModal(null)} />
+      )}
+      {activeModal === 'server' && (
+        <ServerModal onClose={() => setActiveModal(null)} />
+      )}
+      {activeModal === 'config' && (
+        <ConfigModal onClose={() => setActiveModal(null)} />
+      )}
+      {activeModal === 'encoding' && (
+        <EncodingPicker onClose={() => setActiveModal(null)} />
+      )}
+    </>
+  );
+}
+```
+
+<Note>
+  All modals use local state (`useState`) for draft changes, then commit to global context only on save. This allows canceling changes without affecting the application state.
+</Note>
+
+<Note>
+  ServerModal subscriptions to IPC events are cleaned up on unmount to prevent memory leaks.
+</Note>

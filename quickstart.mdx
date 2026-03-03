@@ -1,80 +1,428 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick start
+description: Get started with DAWNO and create your first PAWN script in minutes
 ---
 
-## Get started in three steps
+# Quick start
 
-Get your documentation site running locally and make your first customization.
+This guide will help you create, edit, and compile your first PAWN script using DAWNO.
 
-### Step 1: Set up your local environment
+## Opening your first file
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+When you launch DAWNO, you'll see the welcome screen with several options:
+
+<CardGroup cols={3}>
+  <Card title="New file" icon="file">
+    Create a new PAWN script from scratch
+  </Card>
+  <Card title="Open file" icon="folder-open">
+    Open an existing `.pwn` or `.inc` file
+  </Card>
+  <Card title="Open folder" icon="folder">
+    Open a project folder for full workspace features
+  </Card>
+</CardGroup>
+
+<Steps>
+  <Step title="Create a new file">
+    Press `Ctrl+N` or click "New File" on the welcome screen. A blank editor tab will open.
+  </Step>
+  
+  <Step title="Write your first script">
+    Copy and paste this basic gamemode:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    ```pawn
+    #include <a_samp>
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    main()
+    {
+        print("\n----------------------------------");
+        print(" My First Gamemode Loaded!");
+        print("----------------------------------\n");
+    }
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    public OnGameModeInit()
+    {
+        SetGameModeText("My Gamemode v1.0");
+        AddPlayerClass(0, 1958.3783, 1343.1572, 15.3746, 269.1425, 0, 0, 0, 0, 0, 0);
+        return 1;
+    }
+    
+    public OnPlayerConnect(playerid)
+    {
+        new playerName[MAX_PLAYER_NAME], string[128];
+        GetPlayerName(playerid, playerName, sizeof(playerName));
+        format(string, sizeof(string), "Welcome %s to the server!", playerName);
+        SendClientMessageToAll(0x00FF00FF, string);
+        return 1;
+    }
+    
+    public OnPlayerSpawn(playerid)
+    {
+        SetPlayerInterior(playerid, 0);
+        return 1;
+    }
+    ```
+  </Step>
+  
+  <Step title="Save the file">
+    Press `Ctrl+S` or click the Save button in the toolbar. Name your file `mygamemode.pwn`.
+    
+    <Note>
+    DAWNO supports auto-save with configurable delay (default 1000ms). Enable it in Settings.
+    </Note>
+  </Step>
+</Steps>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+## Using the Monaco editor features
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+DAWNO's Monaco editor provides powerful editing capabilities tailored for PAWN development.
 
-### Step 3: Go live
+### Code completion
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+As you type, intelligent suggestions appear automatically:
+
+```pawn
+public OnPlayerCommandText(playerid, cmdtext[])
+{
+    // Type "SendClient" and press Ctrl+Space to see:
+    // - SendClientMessage
+    // - SendClientMessageToAll
+    // with full function signatures and documentation
+    
+    if(!strcmp(cmdtext, "/heal", true))
+    {
+        SetPlayerHealth(playerid, 100.0);
+        SendClientMessage(playerid, 0x00FF00FF, "You have been healed!");
+        return 1;
+    }
+    return 0;
+}
+```
+
+<Note>
+Press `Ctrl+Space` at any time to trigger code completion manually.
+</Note>
+
+### Function signatures
+
+When you type a function name and opening parenthesis, DAWNO shows parameter hints:
+
+```pawn
+format(string, sizeof(string), "Player %s scored %d points", playerName, score);
+//     ^ Hover shows: format(output[], size, const format[], ...)
+```
+
+### Go to line
+
+Quickly navigate to a specific line:
+
+<Steps>
+  <Step title="Press Ctrl+G">
+    The "Go to Line" dialog appears.
+  </Step>
+  <Step title="Enter line number">
+    Type the line number and press Enter.
+  </Step>
+</Steps>
+
+### Find and replace
+
+Powerful search and replace with regex support:
+
+<CodeGroup>
+```text Find (Ctrl+F)
+Search for text in the current file
+Supports case-sensitive and whole-word matching
+```
+
+```text Replace (Ctrl+H)
+Find and replace text
+Supports regex patterns
+Replace one or all occurrences
+```
+</CodeGroup>
+
+### Minimap and navigation
+
+- **Minimap**: Overview of your entire file on the right side
+- **Word wrap**: Toggle with the settings panel
+- **Smooth scrolling**: Performance-optimized rendering
+
+## Compiling your script
+
+<Steps>
+  <Step title="Configure the compiler">
+    Before compiling, set your compiler path:
+    
+    1. Press `Ctrl+,` to open Settings
+    2. Navigate to the Compiler section
+    3. Click "Browse" next to "Compiler Path (pawncc.exe)"
+    4. Select your `pawncc.exe` file
+    
+    <Note>
+    If you open a folder containing a `pawno` or `qawno` directory, DAWNO automatically detects `pawncc.exe`.
+    </Note>
+  </Step>
+  
+  <Step title="Add include paths">
+    Add any custom include directories:
+    
+    1. In Settings > Compiler > Include Paths
+    2. Click "+ Add Path"
+    3. Select your include directory
+    
+    Common paths:
+    - `pawno/include`
+    - Custom libraries like `YSI` or `streamer`
+  </Step>
+  
+  <Step title="Press F5 to compile">
+    The compilation output appears in the Output panel at the bottom:
+    
+    ```
+    Pawn compiler 3.10.10
+    Copyright (c) 1997-2006, ITB CompuPhase
+    
+    Compiled successfully.
+    ```
+    
+    <Note>
+    The compiled `.amx` file is created in the same directory as your `.pwn` file.
+    </Note>
+  </Step>
+</Steps>
+
+### Handling compilation errors
+
+If compilation fails, errors appear in the Output panel:
+
+```
+mygamemode.pwn(15) : error 001: expected token: ";", but found ")"
+Pawn compiler 3.10.10
+1 Error.
+```
+
+Click on the error to jump to the problematic line.
+
+## Working with folders and projects
+
+Opening a folder unlocks DAWNO's full potential:
+
+<Steps>
+  <Step title="Open a project folder">
+    Press `Ctrl+K Ctrl+O` or click "Open Folder" to select your SA-MP/open.mp server directory.
+  </Step>
+  
+  <Step title="Explore the file tree">
+    The Explorer sidebar shows your project structure:
+    
+    - Navigate through folders
+    - Create new files and folders
+    - Rename and delete items
+    - Copy file paths
+  </Step>
+  
+  <Step title="Use server manager">
+    If DAWNO detects a server executable, you can:
+    
+    1. Click the "Server" button in the toolbar
+    2. Start, stop, or restart your server
+    3. View live console logs
+    
+    <Note>
+    DAWNO automatically scans up to 4 directory levels to find `samp-server.exe` or `omp-server.exe`.
+    </Note>
+  </Step>
+</Steps>
+
+## Using Git source control
+
+If your folder is a Git repository, the Source Control panel provides full Git integration:
+
+<Steps>
+  <Step title="View changes">
+    The Source Control sidebar shows:
+    - Staged changes
+    - Unstaged changes
+    - Untracked files
+    - Recent commits
+  </Step>
+  
+  <Step title="Stage and commit">
+    1. Click the "+" icon next to changed files to stage them
+    2. Enter a commit message
+    3. Press `Ctrl+Enter` or click "Commit"
+  </Step>
+  
+  <Step title="Push and pull">
+    - Click "Pull" to fetch and merge remote changes
+    - Click "Push" to push your commits to the remote repository
+    
+    <Note>
+    The sync status shows incoming and outgoing commits.
+    </Note>
+  </Step>
+  
+  <Step title="View diffs">
+    Right-click a changed file and select "Open Changes" to view a side-by-side diff.
+  </Step>
+</Steps>
+
+### Initialize a new repository
+
+If your folder isn't a Git repository:
+
+1. Open the Source Control panel
+2. Click "Initialize Repository"
+3. Start tracking your changes
+
+## Keyboard shortcuts
+
+Master these shortcuts to boost your productivity:
+
+<CardGroup cols={2}>
+  <Card title="File operations" icon="file">
+    - `Ctrl+N` - New file
+    - `Ctrl+O` - Open file
+    - `Ctrl+S` - Save
+    - `Ctrl+Shift+S` - Save as
+    - `Ctrl+W` - Close tab
+  </Card>
+  
+  <Card title="Editing" icon="pen">
+    - `Ctrl+Z` - Undo
+    - `Ctrl+Y` - Redo
+    - `Ctrl+F` - Find
+    - `Ctrl+H` - Find and replace
+    - `Ctrl+G` - Go to line
+  </Card>
+  
+  <Card title="View" icon="eye">
+    - `Ctrl++` - Increase font size
+    - `Ctrl+-` - Decrease font size
+    - `Ctrl+0` - Reset font size
+  </Card>
+  
+  <Card title="Build" icon="hammer">
+    - `F5` - Compile
+    - `Ctrl+,` - Settings
+  </Card>
+</CardGroup>
+
+## Customizing your editor
+
+Tailor DAWNO to your preferences:
+
+<Steps>
+  <Step title="Open settings">
+    Press `Ctrl+,` or click the Settings button in the toolbar.
+  </Step>
+  
+  <Step title="Editor preferences">
+    Configure:
+    - **Font size**: Adjust text size (default: 14)
+    - **Minimap**: Toggle code minimap
+    - **Word wrap**: Enable/disable line wrapping
+    - **Auto-save**: Enable with custom delay
+    - **Theme**: Dark or light mode
+  </Step>
+  
+  <Step title="Integration settings">
+    - **Discord Rich Presence**: Share your development activity
+    - **Language**: Choose from 13 supported languages
+  </Step>
+</Steps>
+
+<Note>
+Settings are saved in `%APPDATA%/DAWNO/settings.json` and persist across sessions.
+</Note>
+
+## File encoding
+
+DAWNO supports multiple character encodings, crucial for international projects:
+
+### Change encoding
+
+1. Click the encoding indicator in the status bar (bottom right)
+2. Select your desired encoding from the list
+3. The file is reloaded with the new encoding
+
+### Supported encodings
+
+- UTF-8 (default)
+- Windows-1254 (Turkish)
+- Windows-1252 (Western European)
+- And many more regional encodings
+
+<Warning>
+Changing encoding affects how the file is read and written. Choose the encoding that matches your server's configuration.
+</Warning>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+Now that you're familiar with the basics:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Explore advanced features" icon="wand-magic-sparkles" href="/features/git-source-control">
+    Learn about server manager, config editor, and Discord Rich Presence
+  </Card>
+  
+  <Card title="Customize DAWNO" icon="palette" href="/configuration/settings">
+    Configure compiler settings, keyboard shortcuts, and themes
+  </Card>
 </CardGroup>
 
+## Example: Creating a command system
+
+Here's a practical example using DAWNO's features:
+
+```pawn
+#include <a_samp>
+
+public OnPlayerCommandText(playerid, cmdtext[])
+{
+    // DAWNO provides autocomplete for all these functions
+    
+    if(!strcmp(cmdtext, "/heal", true))
+    {
+        SetPlayerHealth(playerid, 100.0);
+        SendClientMessage(playerid, 0x00FF00FF, "You have been healed!");
+        return 1;
+    }
+    
+    if(!strcmp(cmdtext, "/armor", true))
+    {
+        SetPlayerArmour(playerid, 100.0);
+        SendClientMessage(playerid, 0x00FF00FF, "You have been armored!");
+        return 1;
+    }
+    
+    if(!strcmp(cmdtext, "/kill", true))
+    {
+        SetPlayerHealth(playerid, 0.0);
+        return 1;
+    }
+    
+    if(!strcmp(cmdtext, "/veh", true))
+    {
+        new Float:x, Float:y, Float:z, Float:angle;
+        GetPlayerPos(playerid, x, y, z);
+        GetPlayerFacingAngle(playerid, angle);
+        
+        new vehicleid = CreateVehicle(411, x, y, z, angle, -1, -1, 60);
+        PutPlayerInVehicle(playerid, vehicleid, 0);
+        
+        SendClientMessage(playerid, 0x00FF00FF, "Vehicle spawned!");
+        return 1;
+    }
+    
+    return 0;
+}
+```
+
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+Use `Ctrl+Space` while typing function names to see their signatures and parameter documentation.
 </Note>
+
+Happy coding with DAWNO!

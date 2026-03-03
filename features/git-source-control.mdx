@@ -1,0 +1,317 @@
+---
+title: Git source control
+description: Built-in Git GUI with staging, commits, push/pull, diff viewer, and commit history
+---
+
+DAWNO includes a full-featured Git GUI that provides version control without leaving the editor. Manage your PAWN projects with a visual interface for all common Git operations.
+
+## Overview
+
+The source control panel provides:
+
+<CardGroup cols={2}>
+  <Card title="Visual staging" icon="layer-group">
+    Stage and unstage files with one click
+  </Card>
+  <Card title="Commit management" icon="code-commit">
+    Create commits with message editor and keyboard shortcuts
+  </Card>
+  <Card title="Sync operations" icon="arrows-rotate">
+    Push and pull changes to/from remote repositories
+  </Card>
+  <Card title="Diff viewer" icon="code-compare">
+    Visual diff for staged and unstaged changes
+  </Card>
+</CardGroup>
+
+## Getting started
+
+### Initialize repository
+
+If your folder is not a Git repository:
+
+1. Open the Source Control panel from the sidebar
+2. Click **Initialize Repository**
+3. DAWNO creates a new Git repository in the current folder
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:398-403`
+
+### Repository detection
+
+DAWNO automatically detects if the current folder is a Git repository and displays:
+
+- Repository status (changes, staged files, untracked files)
+- Commit history
+- Incoming/outgoing commits
+
+<Info>
+The panel refreshes automatically every 5 seconds to stay in sync with external Git operations.
+</Info>
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:393-396`
+
+## File staging
+
+### Stage individual files
+
+In the **Changes** or **Untracked Files** section:
+
+- Click the **+** button that appears on hover to stage a file
+- Click on a file to view its diff
+- Right-click for additional options
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:200-217`
+
+### Unstage files
+
+In the **Staged Changes** section:
+
+- Click the **-** button to unstage a file
+- Right-click and select "Unstage Changes"
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:206-211`
+
+### Bulk operations
+
+Each section has action buttons in the header:
+
+- **Stage All Changes**: Stages all unstaged files (including untracked)
+- **Unstage All**: Removes all files from staging area
+
+<Tip>
+Use the toolbar "Stage All Changes" button (✓ icon) to stage everything at once.
+</Tip>
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:405-415`
+
+## Creating commits
+
+### Commit workflow
+
+1. Stage the files you want to commit
+2. Type your commit message in the text area
+3. Press `Ctrl+Enter` or click the **Commit** button
+
+```
+Message (Ctrl+Enter to commit)
+```
+
+### Smart staging
+
+DAWNO follows VSCode's behavior:
+
+- If nothing is staged but there are changes, it stages everything before committing
+- If files are already staged, only those files are committed
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:417-462`
+
+<Note>
+Commit messages are required - the commit button is disabled when the message is empty.
+</Note>
+
+## File status indicators
+
+Files are marked with status badges:
+
+| Badge | Status | Color |
+|-------|--------|-------|
+| **M** | Modified | Orange |
+| **A** | Added | Green |
+| **D** | Deleted | Red |
+| **U** | Untracked/Unmerged | Green/Orange |
+| **R** | Renamed | Blue |
+| **C** | Copied | Blue |
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:29-43`
+
+## Context menu actions
+
+Right-click any file for quick actions:
+
+### All files
+
+- **Open Changes**: View diff in modal
+- **Open File**: Open in editor
+- **Reveal in File Explorer**: Show in system file manager
+- **Reveal in Explorer View**: Jump to file in DAWNO's explorer
+
+### Unstaged/Untracked files
+
+- **Stage Changes**: Add to staging area
+- **Discard Changes**: Revert to HEAD version (unstaged only)
+- **Add to .gitignore**: Ignore this file
+
+### Staged files
+
+- **Unstage Changes**: Remove from staging area
+- **Open File (HEAD)**: View the committed version
+
+### Gitignore management
+
+- **Add to .gitignore**: Adds the file path to `.gitignore`
+- **Remove from .gitignore**: Removes the entry from `.gitignore`
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:69-175`
+
+## Diff viewer
+
+Click any file to open the diff modal showing:
+
+- **Side-by-side comparison** of old vs new content
+- **Line-by-line changes** with syntax highlighting
+- **Staged vs unstaged diffs**
+- **Commit diffs** when viewing history
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:832-841`
+
+<Info>
+The diff modal uses the same syntax highlighting as the main editor for PAWN files.
+</Info>
+
+## Push and pull
+
+### Sync toolbar
+
+The header contains sync buttons:
+
+- **↓ Pull**: Fetch and merge changes from remote
+- **↑ Push**: Send local commits to remote
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:465-481`
+
+### Sync status
+
+The history pane shows:
+
+- **Outgoing commits**: Local commits not yet pushed
+- **Incoming commits**: Remote commits not yet pulled
+
+Each section has a quick action button to push or pull.
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:697-757`
+
+### Sync feedback
+
+During push/pull operations:
+
+- A status message appears ("Pulling..." or "Pushing...")
+- Buttons are disabled to prevent concurrent operations
+- Results are logged to the Output panel
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:467-481`
+
+## Commit history
+
+### View commits
+
+The **Commits** section shows:
+
+- Short commit hash (first 7 characters)
+- Commit message
+- Click to view details
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:759-783`
+
+### Commit details modal
+
+Clicking a commit opens a modal with:
+
+- Full commit information
+- List of changed files with status badges
+- Click any file to view its diff at that commit
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:786-829`
+
+### Outgoing/incoming commits
+
+Commits are categorized:
+
+- **Outgoing** (↑): Local commits pending push
+- **Incoming** (↓): Remote commits pending pull
+- **Commits**: Full local history
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:377-385`
+
+## Stash operations
+
+Save and restore work-in-progress changes:
+
+### Stash changes
+
+1. Click the stash button (📦 icon) in the toolbar
+2. All working directory changes are saved
+3. Working directory is cleaned
+
+### Pop stash
+
+1. Click the stash pop button (📦↑ icon)
+2. Most recent stash is applied
+3. Stash is removed from stack
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:483-495`
+
+<Tip>
+Use stash to temporarily save changes when switching branches or pulling updates.
+</Tip>
+
+## Additional operations
+
+### Discard changes
+
+Revert a file to its committed state:
+
+1. Right-click an unstaged file
+2. Select **Discard Changes**
+3. File is restored to HEAD version
+
+<Note>
+Discarding changes is permanent and cannot be undone!
+</Note>
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:110-114`
+
+### Refresh status
+
+Click the refresh button (🔄 icon) to manually update repository status.
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:359-386`
+
+## File organization
+
+Changes are organized into collapsible sections:
+
+- **Staged Changes**: Files ready to commit
+- **Changes**: Modified tracked files
+- **Untracked Files**: New files not yet tracked
+
+Each section shows:
+
+- File count badge
+- Expandable/collapsible content
+- Bulk action buttons
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:308-325`
+
+## Gitignore integration
+
+DAWNO reads `.gitignore` and marks ignored files:
+
+- Ignored files are detected and highlighted
+- Context menu shows "Remove from .gitignore" for ignored files
+- Context menu shows "Add to .gitignore" for non-ignored files
+
+Implementation: `~/workspace/source/renderer/components/SourceControlPanel.tsx:125-136`
+
+## Internationalization
+
+All UI text in the source control panel is translated across 13 languages:
+
+- English, Spanish, French, German, Italian, Portuguese
+- Russian, Turkish, Arabic, Chinese, Japanese, Korean, Vietnamese
+
+Implementation: See language files in `~/workspace/source/renderer/i18n/locales/`
+
+## Related features
+
+- [Monaco editor](/features/monaco-editor) - Code editing with syntax highlighting
+- [Auto-save](/features/auto-save) - Automatic file saving before commits

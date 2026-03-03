@@ -1,0 +1,371 @@
+---
+title: useFileOperations
+description: High-level file system operations including opening files, folders, and managing editor tabs
+---
+
+## Overview
+
+The `useFileOperations` hook provides high-level file system operations for the DAWNO editor. It handles opening files and folders, creating new files, saving, and automatically detecting server executables, config files, and compilers in opened folders.
+
+## Import
+
+```typescript
+import { useFileOperations } from '@/hooks/useFileOperations';
+```
+
+## Usage
+
+```typescript
+function FileMenu() {
+  const { newFile, openFile, openFolder, closeFolder, saveFile } = useFileOperations();
+  
+  return (
+    <Menu>
+      <MenuItem onClick={newFile}>New File</MenuItem>
+      <MenuItem onClick={openFile}>Open File...</MenuItem>
+      <MenuItem onClick={openFolder}>Open Folder...</MenuItem>
+      <MenuItem onClick={closeFolder}>Close Folder</MenuItem>
+      <MenuItem onClick={() => saveFile(false)}>Save</MenuItem>
+      <MenuItem onClick={() => saveFile(true)}>Save As...</MenuItem>
+    </Menu>
+  );
+}
+```
+
+## Return value
+
+The hook returns an object with the following methods:
+
+<ResponseField name="newFile" type="() => void">
+  Creates a new untitled PAWN script tab.
+  
+  ```typescript
+  // Creates a tab named "script_1.pwn", "script_2.pwn", etc.
+  newFile();
+  ```
+</ResponseField>
+
+<ResponseField name="openFile" type="() => Promise<void>">
+  Opens a file picker dialog to select one or more files to open.
+  
+  ```typescript
+  // Shows native file picker, supports multiple selection
+  await openFile();
+  ```
+  
+  Handles multiple file selections and error cases (file too large, binary files).
+</ResponseField>
+
+<ResponseField name="openFolder" type="() => Promise<void>">
+  Opens a folder picker dialog and sets it as the current workspace folder.
+  
+  ```typescript
+  // Shows native folder picker
+  await openFolder();
+  ```
+  
+  Automatically triggers detection for:
+  - Server executable (SA-MP/open.mp)
+  - Config file (server.cfg/config.json)
+  - Compiler (pawncc/pawncc.exe)
+</ResponseField>
+
+<ResponseField name="closeFolder" type="() => void">
+  Closes the current workspace folder.
+  
+  ```typescript
+  closeFolder();
+  ```
+</ResponseField>
+
+<ResponseField name="saveFile" type="(isSaveAs?: boolean) => Promise<void>">
+  Saves the active file or shows Save As dialog.
+  
+  ```typescript
+  // Save current file
+  await saveFile(false);
+  
+  // Show Save As dialog
+  await saveFile(true);
+  ```
+  
+  Dispatches a `dawno:save-request` custom event that is handled by `useEditorBridge`.
+</ResponseField>
+
+<ResponseField name="openFileByPath" type="(path: string) => Promise<void>">
+  Opens a file by its absolute path.
+  
+  ```typescript
+  // Open a specific file
+  await openFileByPath('/path/to/script.pwn');
+  ```
+  
+  Useful for programmatic file opening (e.g., from file explorer clicks).
+</ResponseField>
+
+## Dependencies
+
+The hook uses the following context values from `EditorContext`:
+
+<ParamField path="createTab" type="(name: string, path: string | null, content: string) => TabState | null" required>
+  Function to create a new editor tab
+</ParamField>
+
+<ParamField path="setCurrentFolderPath" type="(path: string | null) => void" required>
+  Function to set the workspace folder path
+</ParamField>
+
+<ParamField path="currentEncoding" type="string" required>
+  Current file encoding for read/write operations
+</ParamField>
+
+<ParamField path="tabs" type="TabState[]" required>
+  Array of open tabs (used for naming new files)
+</ParamField>
+
+<ParamField path="setActiveTabId" type="(id: number | null) => void" required>
+  Function to switch to a different tab
+</ParamField>
+
+<ParamField path="appendOutput" type="(text: string, type?: 'info' | 'error' | 'warning' | 'success') => void" required>
+  Function to append messages to the output panel
+</ParamField>
+
+<ParamField path="setDetectedServerPath" type="(path: string | null) => void" required>
+  Function to set detected server executable path
+</ParamField>
+
+<ParamField path="setDetectedServerType" type="(type: 'omp' | 'samp' | null) => void" required>
+  Function to set detected server type
+</ParamField>
+
+<ParamField path="setDetectedConfigPath" type="(path: string | null) => void" required>
+  Function to set detected config file path
+</ParamField>
+
+<ParamField path="setSettings" type="React.Dispatch<React.SetStateAction<AppSettings>>" required>
+  Function to update application settings
+</ParamField>
+
+## Auto-detection features
+
+When opening a folder, the hook automatically detects project resources:
+
+### Server detection
+
+```typescript
+window.api.detectServer(folderPath).then(res => {
+  if (res) {
+    setDetectedServerPath(res.path);
+    setDetectedServerType(res.type); // 'omp' | 'samp'
+    appendOutput(`Detected server executable: ${res.path}`, 'success');
+  }
+});
+```
+
+Looks for:
+- `omp-server` / `omp-server.exe` (open.mp)
+- `samp-server` / `samp03svr.exe` (SA-MP)
+
+### Config detection
+
+```typescript
+window.api.detectConfig(folderPath).then(res => {
+  if (res) {
+    setDetectedConfigPath(res);
+    appendOutput(`Detected config file: ${res}`, 'success');
+  }
+});
+```
+
+Looks for:
+- `config.json` (open.mp)
+- `server.cfg` (SA-MP)
+
+### Compiler detection
+
+```typescript
+window.api.findPawncc(folderPath).then(res => {
+  if (res) {
+    setSettings(prev => ({ ...prev, compilerPath: res }));
+    appendOutput(`Detected compiler: ${res}`, 'success');
+  }
+});
+```
+
+Looks for:
+- `pawncc` / `pawncc.exe` in common locations
+- `pawno/pawncc.exe`
+- `compiler/pawncc.exe`
+
+## Error handling
+
+The hook handles various file operation errors:
+
+### File too large
+
+```typescript
+if (res.error === 'FILE_TOO_LARGE') {
+  msg = t.output_msgs.fileTooLarge; // Localized error message
+}
+```
+
+### Binary file detected
+
+```typescript
+if (res.error === 'FILE_IS_BINARY') {
+  msg = t.output_msgs.fileIsBinary; // Localized error message
+}
+```
+
+### Generic errors
+
+```typescript
+if (res.error) {
+  appendOutput(`Error opening ${res.path}: ${res.error}`, 'error');
+}
+```
+
+## IPC API methods used
+
+<ResponseField name="window.api.openFile" type="function">
+  ```typescript
+  openFile(
+    encoding: string
+  ): Promise<Array<{
+    path: string;
+    content?: string;
+    error?: string;
+  }> | null>
+  ```
+  
+  Opens a file picker and reads selected files.
+</ResponseField>
+
+<ResponseField name="window.api.readFile" type="function">
+  ```typescript
+  readFile(
+    filePath: string,
+    encoding: string
+  ): Promise<{
+    content: string | null;
+    error: string | null;
+  }>
+  ```
+  
+  Reads a file's content with specified encoding.
+</ResponseField>
+
+<ResponseField name="window.api.openFolderDialog" type="function">
+  ```typescript
+  openFolderDialog(): Promise<string | null>
+  ```
+  
+  Opens a folder picker dialog. Returns the selected folder path or null.
+</ResponseField>
+
+<ResponseField name="window.api.detectServer" type="function">
+  ```typescript
+  detectServer(
+    folderPath: string
+  ): Promise<{
+    path: string;
+    type: 'omp' | 'samp';
+  } | null>
+  ```
+  
+  Detects server executable in the given folder.
+</ResponseField>
+
+<ResponseField name="window.api.detectConfig" type="function">
+  ```typescript
+  detectConfig(
+    folderPath: string
+  ): Promise<string | null>
+  ```
+  
+  Detects server config file in the given folder.
+</ResponseField>
+
+<ResponseField name="window.api.findPawncc" type="function">
+  ```typescript
+  findPawncc(
+    folderPath: string
+  ): Promise<string | null>
+  ```
+  
+  Searches for PAWN compiler in the given folder.
+</ResponseField>
+
+## Internationalization
+
+The hook uses the language context for localized error messages:
+
+```typescript
+import { useLanguage } from '../i18n/LanguageContext';
+
+const { t } = useLanguage();
+
+// Usage
+let msg = `Error reading file: ${error}`;
+if (error === 'FILE_TOO_LARGE') msg = t.output_msgs.fileTooLarge;
+else if (error === 'FILE_IS_BINARY') msg = t.output_msgs.fileIsBinary;
+```
+
+## Example: File explorer integration
+
+```typescript
+import { useFileOperations } from '@/hooks/useFileOperations';
+
+function FileExplorer() {
+  const { openFileByPath, openFolder } = useFileOperations();
+  const [files, setFiles] = useState([]);
+  
+  const handleFileClick = async (filePath: string) => {
+    // Open file programmatically
+    await openFileByPath(filePath);
+  };
+  
+  const handleFolderClick = async () => {
+    await openFolder();
+    // Folder is now open, server/compiler/config auto-detected
+  };
+  
+  return (
+    <div>
+      <button onClick={handleFolderClick}>Open Folder</button>
+      <FileList files={files} onFileClick={handleFileClick} />
+    </div>
+  );
+}
+```
+
+## Example: Multiple file selection
+
+```typescript
+function ImportFiles() {
+  const { openFile } = useFileOperations();
+  
+  const handleImport = async () => {
+    // Opens native file picker with multi-select
+    await openFile();
+    
+    // All selected files are automatically:
+    // 1. Read from disk
+    // 2. Opened in new tabs
+    // 3. Error-checked (size, binary detection)
+  };
+  
+  return <button onClick={handleImport}>Import Scripts</button>;
+}
+```
+
+<Note>
+  The `saveFile` method dispatches a custom DOM event rather than directly saving. This allows the `useEditorBridge` hook to handle the actual save operation with proper tab state management.
+</Note>
+
+## Related hooks
+
+- [useEditorBridge](/hooks/use-editor-bridge) - Handles the actual save operations
+- [useKeyboardShortcuts](/hooks/use-keyboard-shortcuts) - Keyboard shortcuts for file operations
+- [useSettings](/hooks/use-settings) - Manages compiler paths and other settings

@@ -1,0 +1,294 @@
+---
+title: Auto-save
+description: Automatic file saving with configurable delay to prevent data loss
+---
+
+DAWNO includes an auto-save feature that automatically saves your files after a period of inactivity, helping prevent data loss from crashes, power outages, or accidental closures.
+
+## Overview
+
+Auto-save provides:
+
+<CardGroup cols={2}>
+  <Card title="Automatic saving" icon="floppy-disk">
+    Files save automatically after you stop typing
+  </Card>
+  <Card title="Configurable delay" icon="clock">
+    Set custom delay from instant to several seconds
+  </Card>
+  <Card title="No interruptions" icon="hand">
+    Saves happen in the background without disrupting your work
+  </Card>
+  <Card title="Data protection" icon="shield">
+    Protects against data loss from unexpected events
+  </Card>
+</CardGroup>
+
+## How it works
+
+Auto-save uses a debounced timer:
+
+1. You type or edit a file
+2. Timer starts (or resets if already running)
+3. After the configured delay with no changes, the file saves
+4. Dirty indicator (•) is removed from the tab
+
+### Debouncing behavior
+
+Every keystroke resets the timer:
+
+```
+Type → Timer starts (1000ms)
+Type again → Timer resets (1000ms)
+Type again → Timer resets (1000ms)
+...no typing for 1000ms...
+→ File saves automatically
+```
+
+This prevents constant disk writes while you're actively editing.
+
+Implementation: `~/workspace/source/renderer/components/EditorPanel.tsx:55-60`
+
+<Info>
+Auto-save only triggers when you make changes. Unmodified files are never saved unnecessarily.
+</Info>
+
+## Enabling auto-save
+
+### Default state
+
+Auto-save is **disabled by default** to match traditional IDE behavior.
+
+### Enable in settings
+
+1. Open **Settings** (gear icon in toolbar or `Ctrl+,`)
+2. Navigate to the **Editor** section
+3. Check the **Auto Save** checkbox
+4. Optionally adjust the **Auto Save Delay** slider
+5. Click **Save Changes**
+
+Changes apply immediately - no restart needed.
+
+Implementation: Settings UI in `~/workspace/source/renderer/components/modals/SettingsModal.tsx:130-149`
+
+## Configuring auto-save delay
+
+### Default delay
+
+The default auto-save delay is **1000ms (1 second)**.
+
+### Adjusting the delay
+
+When auto-save is enabled, a delay slider appears:
+
+1. Drag the slider to set delay in milliseconds
+2. Range: Typically 100ms to 5000ms (adjustable)
+3. Current value is shown next to the slider
+4. Changes apply immediately
+
+```
+Auto Save Delay: [======>         ] 1000ms
+```
+
+<Tip>
+Shorter delays (500ms) save more frequently but may increase disk I/O. Longer delays (2000ms+) reduce disk writes but increase risk of losing recent changes.
+</Tip>
+
+### Recommended delays
+
+| Delay | Use case |
+|-------|----------|
+| 500ms | Fast auto-save, more disk writes |
+| 1000ms | Balanced (default) |
+| 2000ms | Less frequent saves, fewer disk writes |
+| 3000ms+ | Minimal auto-save, mostly manual |
+
+Implementation: `~/workspace/source/renderer/components/modals/SettingsModal.tsx:137-149`
+
+## Technical implementation
+
+### Auto-save state management
+
+Auto-save settings are stored in the editor context:
+
+```typescript
+settings: {
+  autoSave: false,        // Enable/disable
+  autoSaveDelay: 1000,    // Delay in milliseconds
+  // ... other settings
+}
+```
+
+Implementation: `~/workspace/source/renderer/context/EditorContext.tsx:176-177`
+
+### Timer lifecycle
+
+The auto-save timer is managed in the editor panel:
+
+```typescript
+const autoSaveEnabledRef = useRef(settings.autoSave ?? false);
+const autoSaveDelayRef = useRef(settings.autoSaveDelay ?? 1000);
+const autoSaveTimerRef = useRef<number | null>(null);
+```
+
+Implementation: `~/workspace/source/renderer/components/EditorPanel.tsx:75-77`
+
+### Change detection
+
+Auto-save is triggered by Monaco's `onDidChangeModelContent` event:
+
+```typescript
+editor.onDidChangeModelContent(() => {
+  if (isProgrammaticUpdate.current) return;
+  
+  // Mark file as dirty
+  setTabs(prev => {
+    // ... mark current tab dirty
+  });
+  
+  // Debounced auto-save
+  if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+  autoSaveTimerRef.current = window.setTimeout(() => {
+    if (autoSaveEnabledRef.current) {
+      document.dispatchEvent(new CustomEvent('dawno:save-request', 
+        { detail: { isSaveAs: false } }
+      ));
+    }
+  }, autoSaveDelayRef.current);
+});
+```
+
+Implementation: `~/workspace/source/renderer/components/EditorPanel.tsx:40-61`
+
+### Preventing stale closures
+
+Refs are used to avoid stale closures in Monaco callbacks:
+
+```typescript
+useEffect(() => { 
+  autoSaveEnabledRef.current = settings.autoSave ?? false; 
+}, [settings.autoSave]);
+
+useEffect(() => { 
+  autoSaveDelayRef.current = settings.autoSaveDelay ?? 1000; 
+}, [settings.autoSaveDelay]);
+```
+
+This ensures the `onDidChangeModelContent` closure always reads the latest settings.
+
+Implementation: `~/workspace/source/renderer/components/EditorPanel.tsx:79-80`
+
+## Save event architecture
+
+Auto-save triggers the same save mechanism as manual saves:
+
+1. Timer expires after configured delay
+2. Custom event `dawno:save-request` is dispatched
+3. Event listener handles the actual file save operation
+4. File is written to disk
+5. Dirty indicator is cleared
+
+<Note>
+The save request event includes `isSaveAs: false` to indicate it's a normal save, not "Save As".
+</Note>
+
+## Auto-save vs manual save
+
+### When auto-save activates
+
+✅ File has unsaved changes (dirty)
+✅ Auto-save is enabled in settings
+✅ Delay period has passed with no new edits
+✅ File has a path (not a new unsaved file)
+
+### When you still need manual save
+
+❌ New files without a path (must "Save As" first)
+❌ Auto-save is disabled
+❌ You want to save immediately (use `Ctrl+S`)
+
+<Tip>
+Auto-save works alongside manual saves - you can still press `Ctrl+S` to save immediately at any time.
+</Tip>
+
+## Use cases
+
+### Protection from crashes
+
+If DAWNO or your system crashes:
+- Auto-save ensures recent changes are saved
+- Maximum data loss is limited to the auto-save delay period
+- No need to manually save after every change
+
+### Continuous workflow
+
+For developers who prefer continuous saving:
+- Enable auto-save with a short delay (500-1000ms)
+- Focus on coding without worrying about saving
+- File is always up-to-date on disk
+
+### Git integration
+
+Auto-save works well with Git:
+- Changes are saved before compilation
+- Git status updates reflect latest file state
+- Reduces "forgot to save before commit" errors
+
+### Multi-file editing
+
+When working with multiple files:
+- All edited files auto-save individually
+- No need to manually save each tab
+- Safely switch between files
+
+## Behavior with other features
+
+### Compilation
+
+When you compile (F5):
+- Unsaved changes are saved automatically (if auto-save is enabled)
+- Compiler reads the latest version from disk
+
+### Git operations
+
+Auto-save integrates with Git:
+- Saved files appear in Git status
+- Diffs show actual file content
+- No "file changed on disk" conflicts
+
+### File watching
+
+If external tools modify your files:
+- DAWNO detects the change
+- Auto-save timer is not affected
+- Your edits continue to auto-save normally
+
+## Disabling auto-save
+
+To disable auto-save:
+
+1. Open Settings
+2. Uncheck **Auto Save**
+3. Save Changes
+
+Auto-save timer is cleared immediately, and no further automatic saves occur.
+
+<Info>
+When auto-save is disabled, you must save files manually with `Ctrl+S` or the Save button.
+</Info>
+
+## Internationalization
+
+Auto-save settings labels are translated to all 13 supported languages:
+
+- "Auto Save" checkbox label
+- "Auto Save Delay (ms)" slider label
+- Millisecond value display
+
+Implementation: See `~/workspace/source/renderer/i18n/locales/en.ts:323-324`
+
+## Related features
+
+- [Monaco editor](/features/monaco-editor) - The editor that detects changes for auto-save
+- [Git source control](/features/git-source-control) - Auto-saved files appear in Git status
+- [Internationalization](/features/internationalization) - Settings are translated to 13 languages

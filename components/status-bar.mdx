@@ -1,0 +1,287 @@
+---
+title: StatusBar
+description: Editor status bar displaying file info, cursor position, and settings
+---
+
+The `StatusBar` component displays contextual information about the active file, editor state, and provides quick access to encoding and word wrap settings.
+
+## Overview
+
+The StatusBar component:
+
+- Displays active file name and path
+- Shows cursor position (line and column)
+- Displays total line count (live from Monaco model)
+- Shows Git branch when in a repository
+- Provides encoding picker trigger
+- Toggles word wrap setting
+- Shows language mode (PAWN)
+
+## Props
+
+```typescript
+interface StatusBarProps {
+  onEncodingClick: () => void;
+}
+```
+
+<ParamField path="onEncodingClick" type="() => void" required>
+  Callback triggered when the encoding indicator is clicked. Typically opens the encoding picker modal.
+</ParamField>
+
+## Component structure
+
+```typescript
+export default function StatusBar({ onEncodingClick }: StatusBarProps)
+```
+
+## Context dependencies
+
+The component uses the following from `EditorContext`:
+
+<ParamField path="tabs" type="TabState[]">
+  Array of all open tabs
+</ParamField>
+
+<ParamField path="activeTabId" type="number | null">
+  ID of the currently active tab
+</ParamField>
+
+<ParamField path="currentEncoding" type="string">
+  Current file encoding (e.g., 'utf-8', 'windows-1254')
+</ParamField>
+
+<ParamField path="currentFolderPath" type="string | null">
+  Path to the currently open folder
+</ParamField>
+
+<ParamField path="settings" type="AppSettings">
+  User settings including wordWrap setting
+</ParamField>
+
+<ParamField path="setSettings" type="React.Dispatch<SetStateAction<AppSettings>>">
+  Function to update settings
+</ParamField>
+
+## Features
+
+### Left section
+
+Displays contextual information:
+
+<Tabs>
+  <Tab title="Git Branch">
+    Shows current Git branch if the folder is a repository:
+    
+    ```tsx
+    {branch && (
+      <span className="status-item status-branch" title={`Git branch: ${branch}`}>
+        <svg>...</svg>
+        {branch}
+      </span>
+    )}
+    ```
+    
+    Branch is fetched asynchronously:
+    
+    ```typescript
+    useEffect(() => {
+      if (!currentFolderPath || !window.api) { 
+        setBranch(null); 
+        return; 
+      }
+      window.api.gitGetBranch(currentFolderPath).then(res => {
+        setBranch(res.branch ?? null);
+      }).catch(() => setBranch(null));
+    }, [currentFolderPath]);
+    ```
+  </Tab>
+  
+  <Tab title="File Name">
+    Displays the active file name with path tooltip:
+    
+    ```tsx
+    <span className="status-item" title={activeTab.path ?? ''}>
+      <svg>...</svg>
+      {filename}
+    </span>
+    ```
+  </Tab>
+  
+  <Tab title="Cursor Position">
+    Shows line and column numbers from active tab cursor:
+    
+    ```tsx
+    {cursor && (
+      <span className="status-item">
+        {t.statusBar.line} {cursor.lineNumber}, {t.statusBar.col} {cursor.column}
+      </span>
+    )}
+    ```
+  </Tab>
+  
+  <Tab title="Line Count">
+    Displays total lines, live-updated from Monaco model:
+    
+    ```typescript
+    useEffect(() => {
+      const model = activeTab?.model;
+      if (!model || model.isDisposed()) { 
+        setLineCount(null); 
+        return; 
+      }
+      setLineCount(model.getLineCount());
+      const disposable = model.onDidChangeContent(() => {
+        if (!model.isDisposed()) setLineCount(model.getLineCount());
+      });
+      return () => disposable.dispose();
+    }, [activeTab?.model]);
+    ```
+  </Tab>
+</Tabs>
+
+### Right section
+
+Provides quick settings and indicators:
+
+<Tabs>
+  <Tab title="Word Wrap">
+    Toggleable word wrap indicator:
+    
+    ```tsx
+    <span
+      className={`status-item status-item-btn${(settings.wordWrap ?? true) ? ' active' : ''}`}
+      title={(settings.wordWrap ?? true) 
+        ? 'Word Wrap: ON (click to toggle)' 
+        : 'Word Wrap: OFF (click to toggle)'}
+      onClick={toggleWordWrap}
+      style={{ cursor: 'pointer' }}
+    >
+      <svg>...</svg>
+      {(settings.wordWrap ?? true) ? 'Wrap' : 'No Wrap'}
+    </span>
+    ```
+    
+    Toggle handler:
+    
+    ```typescript
+    const toggleWordWrap = () => {
+      const next = !(settings.wordWrap ?? true);
+      setSettings(prev => ({ ...prev, wordWrap: next }));
+    };
+    ```
+  </Tab>
+  
+  <Tab title="Encoding">
+    Clickable encoding indicator:
+    
+    ```tsx
+    <span 
+      className="status-item" 
+      style={{ cursor: 'pointer' }} 
+      onClick={onEncodingClick}
+    >
+      {currentEncoding.toUpperCase()}
+    </span>
+    ```
+  </Tab>
+  
+  <Tab title="Language">
+    Static language indicator:
+    
+    ```tsx
+    <span className="status-item">PAWN</span>
+    ```
+  </Tab>
+</Tabs>
+
+## Visual layout
+
+The status bar uses flexbox layout:
+
+```tsx
+<div className="status-bar">
+  <div className="status-left">
+    {/* Git branch, file name, cursor, line count */}
+  </div>
+  <div className="status-right">
+    {/* Word wrap, encoding, language */}
+  </div>
+</div>
+```
+
+## Status items
+
+Each status item has consistent styling:
+
+- `.status-item` - Base class for all items
+- `.status-item-btn` - Clickable items with hover effect
+- `.status-item.active` - Active state (e.g., word wrap ON)
+- `.status-branch` - Git branch with special styling
+
+## Internationalization
+
+Text labels support multiple languages:
+
+```typescript
+const { t } = useLanguage();
+
+// Usage:
+{t.statusBar.line} {cursor.lineNumber}, {t.statusBar.col} {cursor.column}
+{lineCount} {t.statusBar.lines ?? 'lines'}
+```
+
+## Usage example
+
+```tsx
+import StatusBar from './components/StatusBar';
+import { useState } from 'react';
+import EncodingPicker from './components/modals/EncodingPicker';
+
+function App() {
+  const [showEncodingPicker, setShowEncodingPicker] = useState(false);
+  
+  return (
+    <>
+      <StatusBar onEncodingClick={() => setShowEncodingPicker(true)} />
+      {showEncodingPicker && (
+        <EncodingPicker onClose={() => setShowEncodingPicker(false)} />
+      )}
+    </>
+  );
+}
+```
+
+## Empty states
+
+The status bar adapts to different states:
+
+- **No file open**: Shows folder path if available
+- **No folder open**: Shows minimal info
+- **File open**: Shows full information
+- **Not a Git repo**: Hides branch indicator
+
+## Live updates
+
+The status bar automatically updates when:
+
+- Active tab changes
+- Cursor moves (debounced in EditorPanel)
+- File content changes (line count)
+- Word wrap setting changes
+- Encoding changes
+- Folder changes (updates Git branch)
+
+## Related components
+
+- [EncodingPicker](/components/modals#encodingpicker) - Encoding selection modal
+- [EditorPanel](/components/editor-panel) - Updates cursor position
+- [TabsBar](/components/tabs-bar) - Switches active tab
+
+<Note>
+  Line count is updated in real-time by listening to the Monaco model's `onDidChangeContent` event. The subscription is properly cleaned up when the component unmounts or the model changes.
+</Note>
+
+<Note>
+  Git branch detection is performed asynchronously and may show after a brief delay when opening a new folder.
+</Note>

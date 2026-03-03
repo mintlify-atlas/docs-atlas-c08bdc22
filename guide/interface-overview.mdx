@@ -1,0 +1,140 @@
+---
+title: Interface overview
+description: Learn about the main components of the DAWNO IDE interface and how to navigate the workspace.
+---
+
+DAWNO provides a modern, VS Code-inspired interface designed specifically for PAWN development. Understanding the layout will help you work more efficiently with your SA-MP and open.mp projects.
+
+## Main interface components
+
+The DAWNO interface consists of several key areas:
+
+<Steps>
+  <Step title="Title bar">
+    The custom window frame at the top contains the application title and standard window controls (minimize, maximize, close).
+  </Step>
+  
+  <Step title="Activity bar">
+    Located on the far left, this vertical bar lets you switch between:
+    - **Explorer**: Browse and manage project files
+    - **Source Control**: Git integration with change badges
+  </Step>
+  
+  <Step title="Sidebar">
+    The resizable panel next to the activity bar shows the selected view (Explorer or Source Control). Drag the right edge to resize.
+  </Step>
+  
+  <Step title="Editor area">
+    The central workspace where you write code, featuring:
+    - Tabs bar for open files
+    - Toolbar with quick actions
+    - Monaco editor panel
+  </Step>
+  
+  <Step title="Output panel">
+    Shows compilation results, server logs, and other messages. Located below the editor.
+  </Step>
+  
+  <Step title="Status bar">
+    The bottom bar displays:
+    - Current Git branch
+    - Active file name and path
+    - Cursor position (line, column)
+    - Total line count
+    - Word wrap status (toggle)
+    - File encoding (click to change)
+    - Language mode (PAWN)
+  </Step>
+</Steps>
+
+## Activity bar
+
+The activity bar provides quick access to core functionality:
+
+### Explorer view
+
+Click the folder icon to access the file explorer. Here you can:
+- Browse your project directory structure
+- Open files with a single or double click
+- Create, rename, move, and delete files and folders
+- Drag and drop to reorganize files
+
+<Note>
+  Single-click opens a file in preview mode without taking focus from the explorer. Double-click fully opens the file.
+</Note>
+
+### Source Control view
+
+Click the Git branch icon to access source control. The badge shows the number of uncommitted changes:
+- View staged, unstaged, and untracked files
+- Stage/unstage changes
+- Commit with messages
+- Push and pull from remote repositories
+- View commit history
+
+## Toolbar
+
+The toolbar provides one-click access to common operations:
+
+| Button | Shortcut | Action |
+|--------|----------|--------|
+| New | `Ctrl+N` | Create a new untitled file |
+| Open | `Ctrl+O` | Open existing PAWN files |
+| Save | `Ctrl+S` | Save the active file |
+| Compile | `F5` | Compile the current PAWN script |
+| Server | - | Open the server manager modal |
+| Config | - | Open the configuration editor |
+| Settings | `Ctrl+,` | Open application settings |
+
+<Info>
+  The Server button displays a green dot when a SA-MP or open.mp server is running.
+</Info>
+
+## Tabs bar
+
+Manage multiple open files with the tabs bar:
+- Each open file appears as a tab
+- Unsaved files show a dot indicator
+- Close tabs with the × button or middle-click
+- Right-click for context menu options
+- Reorder tabs by dragging
+
+## Resizable panels
+
+Customize your workspace layout:
+
+<Steps>
+  <Step title="Sidebar width">
+    Hover over the vertical divider between the sidebar and editor area. When the cursor changes to a resize icon, drag left or right to adjust the sidebar width (150-600px).
+  </Step>
+  
+  <Step title="Output panel height">
+    The output panel can be expanded or collapsed by clicking its header. When expanded, it shows compilation messages and logs.
+  </Step>
+</Steps>
+
+## Welcome screen
+
+When no files are open, DAWNO displays a welcome screen with:
+- Quick action buttons to get started
+- Recent files and projects
+- Options to open files or folders
+
+## Dark mode
+
+DAWNO uses a dark theme by default, inspired by modern code editors. The color scheme is optimized for long coding sessions and reduces eye strain.
+
+<Note>
+  The interface theme is currently fixed to dark mode. Light theme support may be added in future releases.
+</Note>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Editor features" icon="code" href="/guide/editor-features">
+    Explore Monaco editor capabilities
+  </Card>
+  <Card title="File management" icon="folder" href="/guide/file-management">
+    Learn to work with files and projects
+  </Card>
+</CardGroup>

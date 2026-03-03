@@ -1,0 +1,285 @@
+---
+title: File management
+description: Learn how to open, save, organize, and manage your PAWN scripts and project files in DAWNO.
+---
+
+DAWNO provides comprehensive file management features to help you organize and work with your SA-MP and open.mp projects efficiently.
+
+## Opening files
+
+### Open individual files
+
+Open PAWN scripts (`.pwn`, `.inc`) using any of these methods:
+
+<Tabs>
+  <Tab title="File menu">
+    1. Click **Open** in the toolbar
+    2. Browse to your `.pwn` or `.inc` file
+    3. Select one or multiple files
+    4. Click **Open**
+  </Tab>
+  
+  <Tab title="Keyboard shortcut">
+    Press `Ctrl+O` to open the file browser dialog.
+  </Tab>
+  
+  <Tab title="Explorer panel">
+    1. Open a folder first (see below)
+    2. Navigate in the Explorer sidebar
+    3. Single-click to preview, double-click to open
+  </Tab>
+  
+  <Tab title="Drag and drop">
+    Drag `.pwn` or `.inc` files from Windows Explorer directly onto the DAWNO window.
+  </Tab>
+  
+  <Tab title="External association">
+    Right-click a `.pwn` file in Windows Explorer → **Open with** → **DAWNO**
+    
+    <Note>
+      DAWNO automatically registers as the default program for `.pwn` files on first launch.
+    </Note>
+  </Tab>
+</Tabs>
+
+### Open multiple files
+
+When using the file dialog (`Ctrl+O`), you can:
+- Hold `Ctrl` and click to select multiple files
+- Hold `Shift` to select a range
+- All selected files open in separate tabs
+
+### Open folders (workspace)
+
+Work with an entire project by opening a folder:
+
+<Steps>
+  <Step title="Open folder dialog">
+    Click the **Open Folder** button in the welcome screen or sidebar placeholder.
+  </Step>
+  
+  <Step title="Browse">
+    Select your project root folder (e.g., `gamemodes`, your SA-MP server directory).
+  </Step>
+  
+  <Step title="Explore">
+    The folder structure appears in the Explorer sidebar. You can now browse and open any file within.
+  </Step>
+</Steps>
+
+<Info>
+  Opening a folder enables features like Git integration, server detection, and workspace-level configuration.
+</Info>
+
+## Saving files
+
+### Save current file
+
+**Keyboard shortcut**: `Ctrl+S`
+
+Saves the active file. If the file is untitled:
+1. A save dialog appears
+2. Choose a location and filename
+3. The file extension defaults to `.pwn`
+4. Click **Save**
+
+### File encoding
+
+DAWNO supports multiple character encodings for compatibility with various languages:
+
+**Default encoding**: UTF-8
+
+**Fallback encoding** (for non-UTF-8 files): Windows-1254 (Turkish) or your configured default encoding
+
+<Accordion title="Changing file encoding">
+  1. Click the encoding indicator in the status bar (e.g., **UTF-8**)
+  2. A quick-pick menu appears with available encodings
+  3. Select the desired encoding
+  4. The file is re-read with the new encoding
+  5. Save the file to persist the encoding change
+</Accordion>
+
+### Auto-save
+
+Enable automatic saving to never lose your work:
+
+<Steps>
+  <Step title="Enable auto-save">
+    **Settings** → **Editor** → Check **Auto-Save**
+  </Step>
+  
+  <Step title="Configure delay">
+    Set the auto-save delay (500-5000ms, default: 1000ms). Files save automatically after you stop typing for the specified duration.
+  </Step>
+</Steps>
+
+## Managing files in Explorer
+
+The Explorer sidebar provides full file system operations:
+
+### Create new file
+
+<Tabs>
+  <Tab title="Via toolbar">
+    1. Click the **New File** icon (document with +) in the Explorer header
+    2. Enter the filename (e.g., `mymode.pwn`)
+    3. Press Enter to create
+  </Tab>
+  
+  <Tab title="Via context menu">
+    1. Right-click a folder in Explorer
+    2. Select **New File**
+    3. Type the filename and press Enter
+  </Tab>
+</Tabs>
+
+### Create new folder
+
+<Tabs>
+  <Tab title="Via toolbar">
+    1. Click the **New Folder** icon (folder with +) in the Explorer header
+    2. Enter the folder name
+    3. Press Enter to create
+  </Tab>
+  
+  <Tab title="Via context menu">
+    1. Right-click a folder in Explorer
+    2. Select **New Folder**
+    3. Type the name and press Enter
+  </Tab>
+</Tabs>
+
+### Rename files and folders
+
+1. Right-click the file or folder
+2. Select **Rename**
+3. Type the new name
+4. Press Enter to confirm
+
+### Move files
+
+Reorganize your project with drag and drop:
+
+1. Click and drag a file or folder
+2. Hover over the target folder (it highlights)
+3. Release to move
+
+<Note>
+  Moving files updates their path in the editor. Open tabs remain valid.
+</Note>
+
+### Copy files
+
+1. Right-click the file or folder
+2. Select **Copy**
+3. Right-click the destination folder
+4. Select **Paste**
+
+### Delete files
+
+1. Right-click the file or folder
+2. Select **Delete**
+3. The item moves to the Windows Recycle Bin (safe deletion)
+
+<Info>
+  Deleted files can be restored from the Recycle Bin if needed.
+</Info>
+
+### Reveal in File Explorer
+
+Open the Windows File Explorer at a file's location:
+
+1. Right-click a file in the Explorer sidebar
+2. Select **Reveal in File Explorer**
+
+The folder opens with the file selected.
+
+### Refresh Explorer
+
+If external changes aren't reflected:
+
+1. Click the **Refresh** icon in the Explorer header
+2. The file tree reloads
+
+<Note>
+  DAWNO includes automatic folder watching, so most external changes are detected automatically.
+</Note>
+
+## Working with tabs
+
+### Switch between tabs
+
+- Click any tab to activate it
+- Use `Ctrl+Tab` to cycle through tabs
+- Use `Ctrl+1`, `Ctrl+2`, etc. to jump to specific tabs by position
+
+### Close tabs
+
+| Action | Method |
+|--------|--------|
+| Close active tab | `Ctrl+W` or click the × on the tab |
+| Close tab | Middle-click the tab |
+| Close all tabs | Right-click any tab → **Close All** |
+| Close other tabs | Right-click a tab → **Close Others** |
+| Close tabs to right | Right-click a tab → **Close to the Right** |
+
+### Reorder tabs
+
+Drag tabs horizontally to reorder them in the tabs bar.
+
+### Unsaved changes indicator
+
+Tabs with unsaved changes display a **dot** instead of the close button. Save the file (`Ctrl+S`) to remove the indicator.
+
+## File filters and limits
+
+### Supported file types
+
+DAWNO is optimized for:
+- `.pwn` (PAWN scripts)
+- `.inc` (PAWN includes)
+
+Other text files can be opened, but may not have syntax highlighting.
+
+### File size limit
+
+Files larger than **5MB** are blocked from opening to ensure performance and stability.
+
+### Binary file detection
+
+DAWNO automatically detects binary files (executables, images, etc.) and prevents them from being opened in the editor.
+
+## Project configuration
+
+DAWNO stores workspace-specific settings in a `.dawno` folder at your project root:
+
+```
+your-project/
+├── .dawno/
+│   └── config.json    # Workspace settings
+├── gamemodes/
+│   └── mymode.pwn
+└── pawno/
+    └── include/
+```
+
+This configuration includes:
+- Compiler path preferences
+- Include directories
+- Server paths
+- Last opened files
+
+<Info>
+  The `.dawno` folder is automatically created when you open a folder and is safe to add to `.gitignore`.
+</Info>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Git integration" icon="code-branch" href="/guide/git-integration">
+    Version control your scripts
+  </Card>
+  <Card title="Encoding support" icon="language" href="/guide/encoding-support">
+    Work with multiple languages
+  </Card>
+</CardGroup>

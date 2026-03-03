@@ -1,0 +1,314 @@
+---
+title: Internationalization
+description: Complete multi-language support with 13 languages covering interface, menus, and messages
+---
+
+DAWNO is available in 13 languages, making it accessible to PAWN developers worldwide. Every part of the interface is translated, from menus to error messages.
+
+## Supported languages
+
+DAWNO supports the following languages:
+
+<CardGroup cols={3}>
+  <Card title="English" icon="flag-usa">
+    en - Default language
+  </Card>
+  <Card title="Spanish" icon="flag">
+    es - Español
+  </Card>
+  <Card title="French" icon="flag">
+    fr - Français
+  </Card>
+  <Card title="German" icon="flag">
+    de - Deutsch
+  </Card>
+  <Card title="Italian" icon="flag">
+    it - Italiano
+  </Card>
+  <Card title="Portuguese" icon="flag">
+    pt - Português
+  </Card>
+  <Card title="Russian" icon="flag">
+    ru - Русский
+  </Card>
+  <Card title="Turkish" icon="flag">
+    tr - Türkçe
+  </Card>
+  <Card title="Arabic" icon="flag">
+    ar - العربية
+  </Card>
+  <Card title="Chinese" icon="flag">
+    zh - 中文
+  </Card>
+  <Card title="Japanese" icon="flag">
+    ja - 日本語
+  </Card>
+  <Card title="Korean" icon="flag">
+    ko - 한국어
+  </Card>
+  <Card title="Vietnamese" icon="flag">
+    vi - Tiếng Việt
+  </Card>
+</CardGroup>
+
+Implementation: Language files in `~/workspace/source/renderer/i18n/locales/`
+
+## Changing language
+
+### In settings
+
+1. Open **Settings** (gear icon or `Ctrl+,`)
+2. Scroll to the **Integration** section
+3. Find the **Language** dropdown
+4. Select your preferred language
+5. Click **Save Changes**
+
+The interface updates immediately - no restart required!
+
+<Tip>
+Your language preference is saved and persists across sessions.
+</Tip>
+
+## What's translated
+
+Every part of DAWNO's interface is localized:
+
+### Main UI components
+
+<CardGroup cols={2}>
+  <Card title="Title bar" icon="window-maximize">
+    Window controls and menu items
+  </Card>
+  <Card title="Toolbar" icon="wrench">
+    All toolbar button labels and tooltips
+  </Card>
+  <Card title="Sidebar" icon="sidebar">
+    Explorer and Source Control panels
+  </Card>
+  <Card title="Status bar" icon="minus">
+    Line/column indicators and file info
+  </Card>
+</CardGroup>
+
+### Menus
+
+- **File menu**: New File, Open File, Open Folder, Close Folder, Save, Save As, Close Tab
+- **Build menu**: Compile, Server Manager, Config Editor
+- **Settings menu**: Preferences
+
+Implementation: `~/workspace/source/renderer/i18n/locales/en.ts:222-242`
+
+### Modals and dialogs
+
+#### Settings modal
+
+- Compiler settings (Compiler Path, Include Paths)
+- Editor preferences (Font Size, Minimap, Word Wrap, Auto Save)
+- Integration options (Discord RPC, Language)
+- All labels, buttons, and messages
+
+Implementation: `~/workspace/source/renderer/i18n/locales/en.ts:311-334`
+
+#### Server manager
+
+- Server Control section
+- Status indicators (Online, Offline)
+- Action buttons (Start Server, Stop, Restart, Change Path)
+- Console Output heading
+- Error and status messages
+
+Implementation: `~/workspace/source/renderer/i18n/locales/en.ts:336-353`
+
+#### Config editor
+
+- File selection
+- Key/value labels
+- Action buttons
+- Success and error messages
+
+Implementation: `~/workspace/source/renderer/i18n/locales/en.ts:361-376`
+
+### Source control
+
+Comprehensive Git UI translations:
+
+- Section headings (Staged Changes, Changes, Untracked Files, Commits)
+- Action buttons (Commit, Pull, Push, Stage All, Unstage All, Stash, Refresh)
+- Context menu (Open Changes, Stage Changes, Discard Changes, Add to .gitignore)
+- Status messages (Pulling..., Pushing..., Outgoing, Incoming)
+- Placeholders and empty states
+
+Implementation: `~/workspace/source/renderer/i18n/locales/en.ts:401-441`
+
+### Explorer panel
+
+- Context menu actions (Open, Rename, New File, New Folder, Copy Path, Delete)
+- Confirmation dialogs
+- Input placeholders
+
+Implementation: `~/workspace/source/renderer/i18n/locales/en.ts:285-298`
+
+### Tab context menu
+
+- Close options (Close, Close Saved, Close Others, Close to the Right, Close All)
+- Path operations (Copy Path, Copy Relative Path)
+- Confirmation messages
+
+Implementation: `~/workspace/source/renderer/i18n/locales/en.ts:300-309`
+
+### Output panel
+
+- Panel title and controls
+- Clear, Expand, Collapse buttons
+- Placeholder messages
+
+Implementation: `~/workspace/source/renderer/i18n/locales/en.ts:270-276`
+
+### Welcome screen
+
+- Subtitle and action buttons
+- Keyboard shortcut tips
+
+Implementation: `~/workspace/source/renderer/i18n/locales/en.ts:262-268`
+
+### Error and info messages
+
+- File operation errors (rename, create, delete)
+- Validation messages (file too large, binary file)
+- Success confirmations
+- Path copy notifications
+
+Implementation: `~/workspace/source/renderer/i18n/locales/en.ts:378-387`
+
+## Dynamic messages
+
+Many messages use dynamic interpolation:
+
+### Function-based translations
+
+Some translations are functions that accept parameters:
+
+```typescript
+window.unsavedChangesConfirm: (count: number) =>
+  `${count} file(s) have unsaved changes. Close anyway?`
+```
+
+Examples:
+- `explorer.deleteConfirm(name)` - "Delete {name}? This will move it to Trash."
+- `tabs.unsavedConfirm(name)` - "{name} is unsaved. Close anyway?"
+- `configModal.errorLoading(err)` - "Error loading config: {err}"
+- `serverModal.failedToStart(err)` - "Failed to start server: {err}"
+
+Implementation: See function signatures in `~/workspace/source/renderer/i18n/locales/en.ts:1-220`
+
+<Info>
+Dynamic messages ensure proper grammar and formatting in all languages, even when inserting variable data.
+</Info>
+
+## Language architecture
+
+### Type-safe translations
+
+DAWNO uses TypeScript for type-safe translations:
+
+```typescript
+export interface Locale {
+  menu: {
+    file: string;
+    build: string;
+    settings: string;
+  };
+  // ... more sections
+}
+```
+
+This ensures:
+- All languages have the same keys
+- No missing translations
+- IDE autocomplete for translation keys
+- Compile-time validation
+
+Implementation: `~/workspace/source/renderer/i18n/locales/en.ts:1-221`
+
+### Language context
+
+Translations are provided via React Context:
+
+```typescript
+const { t } = useLanguage();
+
+// Usage:
+<button>{t.file.save}</button>
+<p>{t.explorer.deleteConfirm(fileName)}</p>
+```
+
+### Locale loading
+
+Each language file exports a complete `Locale` object:
+
+```typescript
+import en from './locales/en';
+import es from './locales/es';
+import fr from './locales/fr';
+// ... etc
+```
+
+The active language is selected based on user settings.
+
+## Translation coverage
+
+Every locale file contains translations for:
+
+| Section | Keys | Examples |
+|---------|------|----------|
+| Menu | 3 | File, Build, Settings |
+| File operations | 7 | New File, Open File, Save, Save As |
+| Build menu | 3 | Compile, Server Manager, Config Editor |
+| Window controls | 4 | Minimize, Maximize, Close, unsaved changes |
+| Toolbar | 8 | New, Open, Save, Compile, Server, Config, Settings |
+| Welcome screen | 5 | Subtitle, actions, tips |
+| Output panel | 5 | Title, Clear, Expand, Collapse, placeholder |
+| Status bar | 4 | No file, Line, Column, lines count |
+| Explorer | 11 | Context menu, confirmations, placeholders |
+| Tabs | 8 | Close options, path operations |
+| Settings modal | 18 | All settings sections and labels |
+| Server modal | 12 | Server controls, status, messages |
+| Encoding picker | 3 | Placeholder, no results, confirmation |
+| Config modal | 10 | Editor labels and messages |
+| Output messages | 7 | File operations, errors, confirmations |
+| Sidebar | 8 | Explorer panel labels and actions |
+| Source control | 40 | Git operations, status, history |
+
+**Total**: ~150+ translation keys per language
+
+## Adding a new language
+
+To add support for a new language:
+
+1. Create a new file in `renderer/i18n/locales/{code}.ts`
+2. Import and implement the `Locale` interface
+3. Translate all keys following the English file as reference
+4. Export the locale object as default
+5. Add the language to the language selector in Settings
+
+<Note>
+All language files must implement the complete `Locale` interface - TypeScript will error on missing translations.
+</Note>
+
+## RTL support
+
+Arabic (ar) has right-to-left text direction support:
+
+- UI elements flow from right to left
+- Text alignment is reversed
+- Icons and controls are mirrored appropriately
+
+<Tip>
+If you're a native speaker and notice translation issues, contributions to improve localization are welcome!
+</Tip>
+
+## Related features
+
+- [Discord Presence](/features/discord-presence) - Shows activity in your selected language
+- [Git source control](/features/git-source-control) - Full Git UI translated
+- [Server integration](/features/server-integration) - Server manager in your language

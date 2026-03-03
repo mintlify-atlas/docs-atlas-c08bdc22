@@ -1,0 +1,316 @@
+---
+title: Keyboard shortcuts
+description: Complete reference of all keyboard shortcuts in DAWNO for faster PAWN development.
+---
+
+Master these keyboard shortcuts to dramatically speed up your workflow in DAWNO.
+
+## General shortcuts
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Ctrl+N` | New File | Create a new untitled file |
+| `Ctrl+O` | Open File | Open file browser dialog |
+| `Ctrl+S` | Save | Save the active file |
+| `Ctrl+Shift+S` | Save As | Save with a new name/location |
+| `Ctrl+W` | Close Tab | Close the active tab |
+| `Ctrl+,` | Settings | Open settings modal |
+| `Ctrl+Tab` | Next Tab | Cycle to the next tab |
+| `Ctrl+Shift+Tab` | Previous Tab | Cycle to the previous tab |
+
+<Info>
+  Use `Ctrl+W` to quickly close tabs. Middle-clicking a tab also closes it.
+</Info>
+
+## Compilation
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `F5` | Compile | Compile the current PAWN script |
+
+<Accordion title="Compilation workflow">
+  1. Open a `.pwn` file
+  2. Press `F5` to compile
+  3. Check the **Output Panel** for results
+  4. Fix any errors and press `F5` again
+</Accordion>
+
+## Editor shortcuts
+
+### Navigation
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Ctrl+G` | Go to Line | Jump to a specific line number |
+| `Ctrl+F` | Find | Open find dialog |
+| `Ctrl+H` | Replace | Open find and replace dialog |
+| `F3` | Find Next | Jump to next search match |
+| `Shift+F3` | Find Previous | Jump to previous search match |
+| `Ctrl+Home` | Go to Start | Jump to the beginning of file |
+| `Ctrl+End` | Go to End | Jump to the end of file |
+| `Home` | Line Start | Jump to start of current line |
+| `End` | Line End | Jump to end of current line |
+| `Page Up` | Page Up | Scroll up one page |
+| `Page Down` | Page Down | Scroll down one page |
+
+### Text selection
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Ctrl+A` | Select All | Select entire file content |
+| `Ctrl+L` | Select Line | Select the current line |
+| `Shift+Arrow` | Extend Selection | Extend selection character by character |
+| `Ctrl+Shift+Arrow` | Select Word | Extend selection word by word |
+| `Shift+Home` | Select to Line Start | Select from cursor to line start |
+| `Shift+End` | Select to Line End | Select from cursor to line end |
+| `Ctrl+Shift+Home` | Select to File Start | Select from cursor to file start |
+| `Ctrl+Shift+End` | Select to File End | Select from cursor to file end |
+
+### Editing
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Ctrl+X` | Cut | Cut selected text |
+| `Ctrl+C` | Copy | Copy selected text |
+| `Ctrl+V` | Paste | Paste from clipboard |
+| `Ctrl+Z` | Undo | Undo last change |
+| `Ctrl+Y` | Redo | Redo last undone change |
+| `Ctrl+/` | Toggle Line Comment | Add/remove `//` comment |
+| `Shift+Alt+A` | Toggle Block Comment | Wrap in `/* */` comment |
+| `Ctrl+Shift+K` | Delete Line | Delete the current line |
+| `Ctrl+Enter` | Insert Line Below | Add new line below cursor |
+| `Ctrl+Shift+Enter` | Insert Line Above | Add new line above cursor |
+| `Tab` | Indent | Indent selected lines or insert tab |
+| `Shift+Tab` | Outdent | Decrease indentation |
+
+### Line operations
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Alt+Up` | Move Line Up | Move current line up |
+| `Alt+Down` | Move Line Down | Move current line down |
+| `Shift+Alt+Up` | Copy Line Up | Duplicate line above |
+| `Shift+Alt+Down` | Copy Line Down | Duplicate line below |
+
+<Accordion title="Example: Reordering code">
+  1. Place cursor on a line you want to move
+  2. Press `Alt+Up` or `Alt+Down` to move it
+  3. The line moves with proper indentation preserved
+</Accordion>
+
+### Multiple cursors
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Alt+Click` | Add Cursor | Add cursor at click position |
+| `Ctrl+Alt+Up` | Add Cursor Above | Add cursor on line above |
+| `Ctrl+Alt+Down` | Add Cursor Below | Add cursor on line below |
+| `Ctrl+D` | Select Next Occurrence | Select next instance of word |
+| `Ctrl+Shift+L` | Select All Occurrences | Select all instances of word |
+
+<Accordion title="Multi-cursor workflow">
+  **Renaming a variable:**
+  1. Select the variable name
+  2. Press `Ctrl+Shift+L` to select all occurrences
+  3. Type the new name
+  4. All instances update simultaneously
+</Accordion>
+
+## View shortcuts
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Ctrl++` | Increase Font Size | Zoom in editor text |
+| `Ctrl+-` | Decrease Font Size | Zoom out editor text |
+| `Ctrl+0` | Reset Font Size | Reset to default (14px) |
+
+<Note>
+  Font size changes apply immediately and are saved in your settings.
+</Note>
+
+## Window shortcuts
+
+These are handled by the custom title bar:
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Alt+F4` | Close Window | Exit DAWNO |
+| `F11` | Toggle Fullscreen | Maximize/restore window |
+
+## Source control shortcuts
+
+| Shortcut | Action | Context |
+|----------|--------|----------|
+| `Ctrl+Enter` | Commit | While focused in commit message box |
+
+<Info>
+  Additional Git operations are accessible via the Source Control panel UI.
+</Info>
+
+## Context menu shortcuts
+
+Right-click in various areas to access context-specific menus:
+
+### Tab context menu
+
+**Right-click a tab** to:
+- Close
+- Close Others
+- Close All
+- Close to the Right
+- Reveal in Explorer
+
+### Explorer context menu
+
+**Right-click a file/folder** to:
+- Open
+- Rename
+- Delete
+- Copy/Paste
+- New File
+- New Folder
+- Reveal in File Explorer
+
+### Source Control context menu
+
+**Right-click a file** in Source Control to:
+- Open Changes (diff)
+- Open File
+- Stage/Unstage
+- Discard Changes
+- Add/Remove from .gitignore
+
+## Editor-specific shortcuts
+
+These are Monaco Editor built-ins:
+
+### Advanced editing
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+]` | Indent Line |
+| `Ctrl+[` | Outdent Line |
+| `Ctrl+Shift+\` | Jump to Bracket |
+| `Ctrl+Shift+[` | Fold Region |
+| `Ctrl+Shift+]` | Unfold Region |
+| `Ctrl+K Ctrl+0` | Fold All |
+| `Ctrl+K Ctrl+J` | Unfold All |
+
+### IntelliSense
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Space` | Trigger Suggestions |
+| `Ctrl+Shift+Space` | Trigger Parameter Hints |
+| `Esc` | Dismiss Suggestions |
+
+## Quick reference by category
+
+<Tabs>
+  <Tab title="Most used">
+    - `Ctrl+S` — Save
+    - `Ctrl+F` — Find
+    - `F5` — Compile
+    - `Ctrl+/` — Comment
+    - `Ctrl+Z` — Undo
+  </Tab>
+  
+  <Tab title="File management">
+    - `Ctrl+N` — New File
+    - `Ctrl+O` — Open
+    - `Ctrl+S` — Save
+    - `Ctrl+W` — Close Tab
+    - `Ctrl+Tab` — Switch Tabs
+  </Tab>
+  
+  <Tab title="Editing">
+    - `Ctrl+X/C/V` — Cut/Copy/Paste
+    - `Ctrl+Z/Y` — Undo/Redo
+    - `Ctrl+D` — Select Next Occurrence
+    - `Alt+Up/Down` — Move Line
+    - `Ctrl+/` — Toggle Comment
+  </Tab>
+  
+  <Tab title="Navigation">
+    - `Ctrl+G` — Go to Line
+    - `Ctrl+F` — Find
+    - `F3` — Find Next
+    - `Ctrl+Home/End` — File Start/End
+  </Tab>
+</Tabs>
+
+## Customization
+
+<Note>
+  Keyboard shortcut customization is not currently available. The shortcuts are based on industry-standard conventions (VS Code-style).
+</Note>
+
+Future versions may include configurable keybindings.
+
+## Tips for efficiency
+
+<Steps>
+  <Step title="Learn incrementally">
+    Start with the most common shortcuts (Save, Find, Compile) and gradually add more to your muscle memory.
+  </Step>
+  
+  <Step title="Use multi-cursor">
+    Master `Ctrl+D` and `Ctrl+Shift+L` for renaming variables across your code.
+  </Step>
+  
+  <Step title="Navigate faster">
+    Use `Ctrl+G` to jump to specific lines when debugging compiler errors.
+  </Step>
+  
+  <Step title="Comment efficiently">
+    Select multiple lines and press `Ctrl+/` to comment them all at once.
+  </Step>
+</Steps>
+
+## Printable cheat sheet
+
+<Accordion title="Download reference card">
+  **Essential shortcuts:**
+  
+  ```
+  FILE OPERATIONS
+  Ctrl+N    New File
+  Ctrl+O    Open
+  Ctrl+S    Save
+  Ctrl+W    Close Tab
+  
+  EDITING
+  Ctrl+Z    Undo
+  Ctrl+Y    Redo
+  Ctrl+/    Toggle Comment
+  Ctrl+D    Select Next Occurrence
+  Alt+Up    Move Line Up
+  Alt+Down  Move Line Down
+  
+  NAVIGATION
+  Ctrl+F    Find
+  Ctrl+G    Go to Line
+  F3        Find Next
+  
+  COMPILATION
+  F5        Compile
+  
+  VIEW
+  Ctrl++    Zoom In
+  Ctrl+-    Zoom Out
+  Ctrl+0    Reset Zoom
+  ```
+  
+  Copy this to a text file for quick reference.
+</Accordion>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Editor features" icon="code" href="/guide/editor-features">
+    Explore Monaco editor capabilities
+  </Card>
+  <Card title="Interface overview" icon="window" href="/guide/interface-overview">
+    Learn the IDE layout
+  </Card>
+</CardGroup>

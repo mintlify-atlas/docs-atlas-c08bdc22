@@ -1,0 +1,305 @@
+---
+title: EditorPanel
+description: Monaco editor wrapper component for PAWN code editing
+---
+
+The `EditorPanel` component wraps Monaco Editor and provides PAWN language support, tab model management, and editor state synchronization.
+
+## Overview
+
+`EditorPanel` is the core editing component that:
+
+- Integrates Monaco Editor with React
+- Registers custom PAWN language syntax
+- Manages editor models for each open tab
+- Handles content changes and dirty state tracking
+- Implements auto-save with debouncing
+- Synchronizes editor settings (font size, theme, minimap, etc.)
+- Tracks cursor position and view state
+
+## Component structure
+
+```typescript
+export default function EditorPanel()
+```
+
+### Props
+
+This component takes no props. It reads all necessary state from `EditorContext`.
+
+## Implementation details
+
+### Context dependencies
+
+The component uses the following from `EditorContext`:
+
+<ParamField path="tabs" type="TabState[]">
+  Array of open file tabs
+</ParamField>
+
+<ParamField path="setTabs" type="React.Dispatch<SetStateAction<TabState[]>>">
+  Function to update tabs state
+</ParamField>
+
+<ParamField path="activeTabId" type="number | null">
+  ID of the currently active tab
+</ParamField>
+
+<ParamField path="updateTab" type="(id: number, changes: Partial<TabState>) => void">
+  Function to update specific tab properties
+</ParamField>
+
+<ParamField path="settings" type="AppSettings">
+  User settings (fontSize, theme, minimap, wordWrap, autoSave, etc.)
+</ParamField>
+
+<ParamField path="setSettings" type="React.Dispatch<SetStateAction<AppSettings>>">
+  Function to update settings
+</ParamField>
+
+<ParamField path="editorRef" type="MutableRefObject<IStandaloneCodeEditor | null>">
+  Reference to Monaco editor instance
+</ParamField>
+
+<ParamField path="monacoRef" type="MutableRefObject<typeof monaco | null>">
+  Reference to Monaco API
+</ParamField>
+
+<ParamField path="isProgrammaticUpdate" type="MutableRefObject<boolean>">
+  Flag to prevent dirty state when updating content programmatically
+</ParamField>
+
+<ParamField path="shouldPreventFocus" type="MutableRefObject<boolean>">
+  Flag to prevent auto-focus on model switch
+</ParamField>
+
+<ParamField path="activeTabIdRef" type="MutableRefObject<number | null>">
+  Ref to active tab ID for closure access
+</ParamField>
+
+## Key features
+
+### Monaco initialization
+
+On editor mount, the component:
+
+1. Stores editor and Monaco references
+2. Applies initial settings (fontSize, theme)
+3. Registers PAWN language if not already registered
+4. Sets up event listeners for content changes and cursor movement
+
+```typescript
+const handleEditorDidMount = (editor: IStandaloneCodeEditor, monaco: typeof Monaco) => {
+  editorRef.current = editor;
+  monacoRef.current = monaco;
+  
+  // Apply settings
+  editor.updateOptions({
+    fontSize: settings.fontSize,
+    theme: settings.theme === 'dark' ? 'vs-dark' : 'vs'
+  });
+  
+  // Register language
+  if (!monaco.languages.getLanguages().find(l => l.id === 'pawn')) {
+    registerPawnLanguage(monaco);
+  }
+};
+```
+
+### Model management
+
+The component manages Monaco text models for each tab:
+
+- Each tab has its own persistent model
+- Models are switched imperatively using `editor.setModel()`
+- View state (cursor, scroll position) is preserved per tab
+- The editor component is never unmounted (prevents crashes)
+
+```typescript
+useEffect(() => {
+  const editor = editorRef.current;
+  if (!editor) return;
+
+  // Detach model if tab is invalid
+  if (!activeTab || !activeTab.model || activeTab.model.isDisposed()) {
+    editor.setModel(null);
+    return;
+  }
+
+  // Switch model
+  if (editor.getModel() !== activeTab.model) {
+    editor.setModel(activeTab.model);
+    if (activeTab.viewState) {
+      editor.restoreViewState(activeTab.viewState);
+    }
+    editor.layout();
+  }
+}, [activeTabId, activeTab]);
+```
+
+### Dirty state tracking
+
+Content changes mark tabs as dirty:
+
+```typescript
+editor.onDidChangeModelContent(() => {
+  if (isProgrammaticUpdate.current) return;
+  
+  const currentTabId = activeTabIdRef.current;
+  if (currentTabId) {
+    setTabs(prev => {
+      const idx = prev.findIndex(t => t.id === currentTabId);
+      if (idx !== -1 && !prev[idx].dirty) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], dirty: true };
+        return next;
+      }
+      return prev;
+    });
+  }
+});
+```
+
+### Auto-save
+
+Debounced auto-save triggers after content changes:
+
+```typescript
+// Auto-save debounce
+if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+autoSaveTimerRef.current = window.setTimeout(() => {
+  if (autoSaveEnabledRef.current) {
+    document.dispatchEvent(new CustomEvent('dawno:save-request', { 
+      detail: { isSaveAs: false } 
+    }));
+  }
+}, autoSaveDelayRef.current);
+```
+
+### Cursor tracking
+
+Cursor position is tracked and stored in tab state:
+
+```typescript
+editor.onDidChangeCursorPosition(e => {
+  clearTimeout(timeout);
+  timeout = setTimeout(() => {
+    if (activeTabId) {
+      updateTab(activeTabId, { 
+        cursor: { 
+          lineNumber: e.position.lineNumber, 
+          column: e.position.column 
+        } 
+      });
+    }
+  }, 200);
+});
+```
+
+### Zoom shortcuts
+
+Keyboard shortcuts for font size adjustment:
+
+- `Ctrl + =` or `Ctrl + +`: Increase font size
+- `Ctrl + -`: Decrease font size
+- `Ctrl + 0`: Reset to default (14px)
+
+```typescript
+const handleKeyDown = (e: KeyboardEvent) => {
+  if (e.ctrlKey) {
+    if (e.key === '=' || e.key === '+') {
+      e.preventDefault();
+      setSettings(prev => ({ 
+        ...prev, 
+        fontSize: Math.min(prev.fontSize + 1, 30) 
+      }));
+    } else if (e.key === '-') {
+      e.preventDefault();
+      setSettings(prev => ({ 
+        ...prev, 
+        fontSize: Math.max(prev.fontSize - 1, 8) 
+      }));
+    } else if (e.key === '0') {
+      e.preventDefault();
+      setSettings(prev => ({ ...prev, fontSize: 14 }));
+    }
+  }
+};
+```
+
+## Editor options
+
+The component configures Monaco with these options:
+
+<ParamField path="fontSize" type="number">
+  Font size from settings (8-30px)
+</ParamField>
+
+<ParamField path="fontFamily" type="string" default="'JetBrains Mono', 'Consolas', monospace">
+  Monospace font family
+</ParamField>
+
+<ParamField path="minimap.enabled" type="boolean" default="true">
+  Show/hide minimap from settings
+</ParamField>
+
+<ParamField path="automaticLayout" type="boolean" default="true">
+  Automatically adjust layout on resize
+</ParamField>
+
+<ParamField path="scrollBeyondLastLine" type="boolean" default="false">
+  Disable scrolling past last line
+</ParamField>
+
+<ParamField path="renderWhitespace" type="'selection'">
+  Show whitespace only in selection
+</ParamField>
+
+<ParamField path="tabSize" type="number" default="4">
+  Tab size for PAWN code
+</ParamField>
+
+<ParamField path="wordWrap" type="'on' | 'off'" default="'on'">
+  Word wrap from settings
+</ParamField>
+
+<ParamField path="theme" type="string" default="'vs-dark'">
+  Theme from settings ('vs-dark' or 'vs')
+</ParamField>
+
+## Usage example
+
+```tsx
+import EditorPanel from './components/EditorPanel';
+import { EditorProvider } from './context/EditorContext';
+
+function App() {
+  return (
+    <EditorProvider>
+      <div className="editor-container">
+        <EditorPanel />
+      </div>
+    </EditorProvider>
+  );
+}
+```
+
+## Related components
+
+- [TabsBar](/components/tabs-bar) - Tab switching UI
+- [StatusBar](/components/status-bar) - Cursor position display
+- [Component overview](/components/overview) - Architecture and state management
+
+## Important notes
+
+<Note>
+  The Monaco `<Editor>` component is **never unmounted**. Instead, it's hidden with CSS when there's no active tab. This prevents crashes when `editorRef` or `monacoRef` become null.
+</Note>
+
+<Note>
+  Always use `isProgrammaticUpdate.current = true` before programmatically updating model content to prevent incorrect dirty state.
+</Note>
+
+<Note>
+  Model disposal is handled lazily by `EditorContext` to prevent "Model is disposed" errors during React re-renders.
+</Note>

@@ -1,0 +1,201 @@
+---
+title: Editor features
+description: Discover the powerful Monaco editor features that make PAWN coding efficient and enjoyable in DAWNO.
+---
+
+DAWNO uses Monaco Editor, the same technology that powers Visual Studio Code, providing a professional editing experience with advanced features tailored for PAWN development.
+
+## Syntax highlighting
+
+The editor provides full PAWN language syntax highlighting:
+- Keywords (`new`, `public`, `stock`, `forward`, etc.)
+- Data types (`bool`, `Float`, strings)
+- Comments (single-line `//` and multi-line `/* */`)
+- String literals and escape sequences
+- Numeric values (integers, floats, hexadecimal)
+- Operators and punctuation
+
+<Info>
+  DAWNO includes a custom PAWN language definition registered with Monaco for accurate syntax highlighting.
+</Info>
+
+## Code completion
+
+The editor offers intelligent autocomplete suggestions as you type:
+- PAWN language keywords
+- Built-in functions and constants
+- Context-aware suggestions based on your code
+
+<Note>
+  Press `Ctrl+Space` to manually trigger IntelliSense suggestions at any time.
+</Note>
+
+## Find and replace
+
+Powerful search and replace functionality:
+
+<Tabs>
+  <Tab title="Find">
+    **Keyboard shortcut**: `Ctrl+F`
+    
+    - Search for text in the current file
+    - Case-sensitive and whole-word options
+    - Regular expression support
+    - Navigate between matches with `F3` (next) and `Shift+F3` (previous)
+  </Tab>
+  
+  <Tab title="Replace">
+    **Keyboard shortcut**: `Ctrl+H`
+    
+    - Replace single occurrences
+    - Replace all matches at once
+    - Preview changes before applying
+    - Supports regex capture groups
+  </Tab>
+</Tabs>
+
+## Go to line
+
+Quickly navigate to any line in your code:
+
+**Keyboard shortcut**: `Ctrl+G`
+
+A dialog appears where you can type the line number. Press Enter to jump directly to that line.
+
+## Minimap
+
+The minimap provides a bird's-eye view of your entire file on the right side of the editor:
+- Scroll through long files quickly
+- See the overall structure at a glance
+- Click anywhere to jump to that section
+- Highlights your current viewport
+
+<Note>
+  Toggle the minimap on or off in **Settings** → **Editor** → **Minimap**.
+</Note>
+
+## Word wrap
+
+Control how long lines are displayed:
+
+<Steps>
+  <Step title="Toggle via status bar">
+    Click the **Wrap** or **No Wrap** indicator in the bottom-right status bar to toggle word wrapping.
+  </Step>
+  
+  <Step title="Configure in settings">
+    Enable or disable word wrap by default in **Settings** → **Editor** → **Word Wrap**.
+  </Step>
+</Steps>
+
+When word wrap is enabled:
+- Long lines break at the editor width
+- No horizontal scrolling needed
+- The actual file content remains unchanged
+
+## Font size adjustment
+
+Customize the editor font size for comfortable reading:
+
+| Action | Shortcut |
+|--------|----------|
+| Increase font size | `Ctrl++` or `Ctrl+=` |
+| Decrease font size | `Ctrl+-` |
+| Reset to default (14px) | `Ctrl+0` |
+
+You can also set a precise font size in **Settings** → **Editor** → **Font Size** using the slider (8-30px).
+
+## Smooth scrolling
+
+The editor features smooth, animated scrolling for a polished experience when navigating through your code.
+
+## Cursor position tracking
+
+The editor tracks your cursor position in real-time:
+- Current line and column shown in the status bar
+- Position persists when switching between tabs
+- Automatically restored when reopening files
+
+## Multiple cursors
+
+Add multiple cursors to edit multiple locations simultaneously:
+
+- **Add cursor**: `Alt+Click`
+- **Add cursor above**: `Ctrl+Alt+Up`
+- **Add cursor below**: `Ctrl+Alt+Down`
+- **Select all occurrences**: `Ctrl+Shift+L`
+
+<Accordion title="Example: Renaming multiple variables">
+  1. Select a variable name
+  2. Press `Ctrl+D` to select the next occurrence
+  3. Repeat or use `Ctrl+Shift+L` to select all
+  4. Type to replace all occurrences at once
+</Accordion>
+
+## Code folding
+
+Collapse sections of code for better readability:
+- Fold/unfold code blocks, functions, and multi-line comments
+- Hover over the left gutter to see fold indicators
+- Click the arrow icon to collapse or expand
+
+## Auto-indentation
+
+The editor automatically maintains proper indentation:
+- Indents new lines based on context
+- Uses **4 spaces** as the default tab size (PAWN standard)
+- Smart indentation after braces `{}`
+
+## Selection and editing
+
+### Line operations
+
+| Action | Shortcut |
+|--------|----------|
+| Select line | `Ctrl+L` |
+| Delete line | `Ctrl+Shift+K` |
+| Move line up | `Alt+Up` |
+| Move line down | `Alt+Down` |
+| Copy line down | `Shift+Alt+Down` |
+| Copy line up | `Shift+Alt+Up` |
+
+### Block selection
+
+Hold `Shift+Alt` and drag to create a column selection across multiple lines.
+
+## Comment toggling
+
+Quickly comment or uncomment code:
+
+- **Toggle line comment**: `Ctrl+/` (adds or removes `//`)
+- **Toggle block comment**: `Shift+Alt+A` (wraps in `/* */`)
+
+## Whitespace rendering
+
+Whitespace characters (spaces, tabs) are visible when text is selected, helping you maintain consistent formatting.
+
+## Fixed overflow widgets
+
+IntelliSense popups, parameter hints, and other overlays are properly positioned and won't clip at the editor boundaries.
+
+## Performance
+
+The Monaco editor is optimized for performance:
+- Handles files up to **5MB** in size
+- Smooth scrolling and editing even in large files
+- Binary file detection prevents crashes
+
+<Note>
+  Files larger than 5MB or detected as binary are blocked from opening to ensure stability.
+</Note>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Keyboard shortcuts" icon="keyboard" href="/guide/keyboard-shortcuts">
+    Master all keyboard shortcuts
+  </Card>
+  <Card title="File management" icon="folder-open" href="/guide/file-management">
+    Learn to manage your files
+  </Card>
+</CardGroup>

@@ -1,0 +1,213 @@
+---
+title: Component architecture
+description: Overview of DAWNO's component architecture and design patterns
+---
+
+DAWNO is built with React and TypeScript, following a modular component architecture. The editor uses Monaco Editor for code editing and implements a custom tab management system for handling multiple files.
+
+## Architecture overview
+
+The application is structured around a central `EditorContext` that manages global state, with specialized components for different UI areas:
+
+```
+App
+├── EditorProvider (Context)
+│   ├── TitleBar
+│   ├── Toolbar
+│   ├── Sidebar (Explorer + Source Control)
+│   ├── TabsBar
+│   ├── EditorPanel (Monaco)
+│   ├── OutputPanel
+│   └── StatusBar
+└── Modals
+    ├── SettingsModal
+    ├── ServerModal
+    ├── ConfigModal
+    └── EncodingPicker
+```
+
+## Core design patterns
+
+### Context-based state management
+
+The `EditorContext` provides centralized state management for:
+
+- **Tabs**: Active tabs, tab switching, and tab lifecycle
+- **Editor state**: Monaco editor reference, settings, cursor position
+- **File system**: Current folder, encoding, file operations
+- **Output**: Compilation results and console messages
+- **Server**: Server detection, control, and status
+
+### Component communication
+
+Components communicate through:
+
+1. **Context hooks**: `useEditorContext()` for global state
+2. **Props**: Parent-to-child data flow
+3. **Callbacks**: Child-to-parent event handling
+4. **Custom events**: Document-level events for cross-component communication
+
+### Monaco integration
+
+The editor uses Monaco Editor with:
+
+- Custom PAWN language registration
+- Persistent tab models (one model per file)
+- View state preservation for cursor/scroll position
+- Programmatic content updates with dirty state tracking
+
+## Key interfaces
+
+### TabState
+
+Represents an open file tab:
+
+```typescript
+interface TabState {
+  id: number;
+  name: string;
+  path: string | null;
+  model: monaco.editor.ITextModel | null;
+  dirty: boolean;
+  cursor?: { lineNumber: number; column: number };
+  scroll?: number;
+  viewState?: monaco.editor.ICodeEditorViewState | null;
+}
+```
+
+### AppSettings
+
+Application-wide user settings:
+
+```typescript
+interface AppSettings {
+  compilerPath: string;
+  includePaths: string[];
+  fontSize: number;
+  theme: string;
+  defaultEncoding?: string;
+  discordRPC?: boolean;
+  language?: string;
+  minimap?: boolean;
+  wordWrap?: boolean;
+  autoSave?: boolean;
+  autoSaveDelay?: number;
+}
+```
+
+### OutputLine
+
+Output panel message:
+
+```typescript
+interface OutputLine {
+  id: number;
+  text: string;
+  type: 'info' | 'error' | 'warning' | 'success';
+  clickable?: boolean;
+  filePath?: string | null;
+}
+```
+
+## Component categories
+
+### Layout components
+
+- [EditorPanel](/components/editor-panel) - Monaco editor wrapper
+- [Sidebar](/components/sidebar) - File explorer and source control
+- [TabsBar](/components/tabs-bar) - Multi-file tab management
+- [StatusBar](/components/status-bar) - Editor status information
+
+### Modal components
+
+- [Modals](/components/modals) - Settings, Server, Config, and Encoding modals
+
+### Utility components
+
+- **TitleBar** - Window controls and title
+- **Toolbar** - Quick actions (compile, run, etc.)
+- **OutputPanel** - Compilation output and console
+- **WelcomeScreen** - Initial landing page
+
+## Best practices
+
+### Using EditorContext
+
+Always access context through the hook:
+
+```typescript
+import { useEditorContext } from '../context/EditorContext';
+
+function MyComponent() {
+  const { tabs, activeTabId, updateTab } = useEditorContext();
+  // ...
+}
+```
+
+### Managing tabs
+
+Use context methods for tab operations:
+
+```typescript
+const { createTab, closeTab, setActiveTabId } = useEditorContext();
+
+// Create a new tab
+const tab = createTab('example.pwn', filePath, content);
+
+// Switch tabs
+setActiveTabId(tabId);
+
+// Close a tab
+closeTab(tabId);
+```
+
+### Monaco operations
+
+Access Monaco through refs:
+
+```typescript
+const { editorRef, monacoRef } = useEditorContext();
+
+// Get editor instance
+const editor = editorRef.current;
+if (editor) {
+  editor.updateOptions({ fontSize: 16 });
+}
+
+// Use Monaco API
+const monaco = monacoRef.current;
+if (monaco) {
+  const model = monaco.editor.createModel(content, 'pawn');
+}
+```
+
+## File structure
+
+```
+renderer/
+├── components/
+│   ├── EditorPanel.tsx
+│   ├── Sidebar.tsx
+│   ├── TabsBar.tsx
+│   ├── StatusBar.tsx
+│   ├── TitleBar.tsx
+│   ├── Toolbar.tsx
+│   ├── OutputPanel.tsx
+│   ├── WelcomeScreen.tsx
+│   ├── SourceControlPanel.tsx
+│   ├── InlineInput.tsx
+│   ├── ExplorerContextMenu.tsx
+│   ├── TabContextMenu.tsx
+│   ├── GitDiffModal.tsx
+│   └── modals/
+│       ├── SettingsModal.tsx
+│       ├── ServerModal.tsx
+│       ├── ConfigModal.tsx
+│       └── EncodingPicker.tsx
+├── context/
+│   └── EditorContext.tsx
+├── hooks/
+│   └── useFileOperations.ts
+└── types/
+    └── global.d.ts
+```

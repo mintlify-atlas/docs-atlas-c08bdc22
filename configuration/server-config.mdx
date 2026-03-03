@@ -1,0 +1,220 @@
+---
+title: Server configuration editor
+description: Edit SA-MP and open.mp server configuration files from within DAWNO
+---
+
+DAWNO includes a built-in server configuration editor for managing `server.cfg` and `config.json` files.
+
+## Opening the config editor
+
+Click the **Config** button in the toolbar or select **Config Editor** from the Build menu.
+
+<Info>
+  DAWNO automatically detects `server.cfg` or `config.json` files in your project folder or up to 5 levels in the parent directory hierarchy.
+</Info>
+
+## Supported configuration formats
+
+The editor supports both SA-MP and open.mp configuration formats:
+
+### SA-MP (.cfg format)
+
+Traditional space-separated key-value pairs:
+
+```cfg
+hostname My SA-MP Server
+maxplayers 50
+gamemode0 grandlarc 1
+```
+
+### open.mp (.json format)
+
+JSON-based configuration with nested objects:
+
+```json
+{
+  "name": "My open.mp Server",
+  "maxplayers": 50,
+  "pawn": {
+    "main_scripts": ["grandlarc"]
+  }
+}
+```
+
+## Configuration detection
+
+When you open the config editor:
+
+<Steps>
+  <Step title="Automatic detection">
+    DAWNO searches for `server.cfg` or `config.json` in the current folder and parent directories
+  </Step>
+  <Step title="File loaded">
+    If found, the configuration is automatically loaded and displayed in the editor
+  </Step>
+  <Step title="Type identified">
+    The configuration type (JSON or CFG) is shown as a badge next to the file path
+  </Step>
+</Steps>
+
+## Editing configurations
+
+The config editor presents your settings in a table format:
+
+| Column | Description |
+| ------ | ----------- |
+| **Key** | Configuration parameter name |
+| **Value** | Parameter value |
+| **Actions** | Remove button (×) |
+
+### Working with JSON configs
+
+JSON configurations are flattened into dot-notation for easier editing:
+
+**Original JSON**:
+```json
+{
+  "pawn": {
+    "legacy_plugins": ["mysql", "streamer"]
+  }
+}
+```
+
+**Displayed as**:
+```
+Key: pawn.legacy_plugins
+Value: ["mysql","streamer"]
+```
+
+<Note>
+  Nested objects use dot notation (e.g., `pawn.main_scripts`). Arrays are displayed as JSON strings.
+</Note>
+
+### Working with CFG configs
+
+CFG configurations are displayed as simple key-value pairs matching the file format:
+
+```
+Key: hostname
+Value: My SA-MP Server
+```
+
+## Editing values
+
+<Steps>
+  <Step title="Click a field">
+    Click on any key or value field to edit it
+  </Step>
+  <Step title="Modify the value">
+    Type your new value. For JSON arrays, use JSON array syntax: `["value1", "value2"]`
+  </Step>
+  <Step title="Add new entries">
+    Click **Add Row** to create a new configuration parameter
+  </Step>
+  <Step title="Remove entries">
+    Click the × button next to any row to remove it
+  </Step>
+</Steps>
+
+<Warning>
+  For JSON configurations, boolean and numeric values are automatically detected:
+  - `"true"` and `"false"` become booleans
+  - Numeric strings become numbers
+  - Arrays must use JSON syntax: `["item1", "item2"]`
+</Warning>
+
+## Browsing for config files
+
+If DAWNO doesn't detect a config file automatically:
+
+<Steps>
+  <Step title="Click Browse">
+    Click the **Browse** button in the config editor
+  </Step>
+  <Step title="Select file">
+    Choose your `server.cfg` or `config.json` file
+  </Step>
+  <Step title="File loaded">
+    The configuration will be loaded and displayed in the table
+  </Step>
+</Steps>
+
+## Saving changes
+
+Click **Save Config** to write your changes back to the configuration file.
+
+<Info>
+  - **JSON files** are formatted with 2-space indentation
+  - **CFG files** maintain the `key value` format
+</Info>
+
+You'll see a success message in the output panel when the configuration is saved.
+
+## Data type handling
+
+The editor intelligently handles different data types:
+
+| Input | Saved as |
+| ----- | -------- |
+| `true` / `false` | Boolean (JSON only) |
+| Numeric strings | Numbers (JSON only) |
+| `["a", "b"]` | Array (JSON only) |
+| Other text | String |
+
+<Accordion title="Example: Converting values">
+  When editing a JSON config:
+  
+  ```
+  Key: maxplayers
+  Value: 100
+  ```
+  
+  Saved as:
+  ```json
+  {
+    "maxplayers": 100
+  }
+  ```
+  
+  Notice the value is a number, not a string.
+</Accordion>
+
+## Nested configuration
+
+For JSON configurations, create nested structures using dot notation:
+
+<Steps>
+  <Step title="Add a row">
+    Click **Add Row**
+  </Step>
+  <Step title="Enter dot notation key">
+    Type: `network.public_ip`
+  </Step>
+  <Step title="Enter value">
+    Type: `192.168.1.1`
+  </Step>
+  <Step title="Save">
+    Click **Save Config**
+  </Step>
+</Steps>
+
+This creates:
+```json
+{
+  "network": {
+    "public_ip": "192.168.1.1"
+  }
+}
+```
+
+## Error handling
+
+If there's an error loading or saving:
+
+- **Loading errors**: Displayed in the output panel with the error message
+- **Saving errors**: Shows an error message with details
+- **Invalid JSON**: Will display a parsing error when loading `.json` files
+
+<Warning>
+  Comments in CFG files (lines starting with `#` or `;`) are preserved during loading but may be lost when saving through the editor.
+</Warning>

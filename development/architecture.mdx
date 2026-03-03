@@ -1,0 +1,213 @@
+---
+title: Technical architecture
+description: Understanding DAWNO's architecture built on Electron, Next.js, and Monaco Editor
+---
+
+DAWNO is built using a modern desktop application stack that combines web technologies with native desktop capabilities. This architecture provides a performant, cross-platform foundation for a professional PAWN IDE.
+
+## Core technology stack
+
+### Electron shell
+
+DAWNO uses **Electron 33.0.0** as its desktop application framework, providing:
+
+- Native desktop integration (window management, file system access, system dialogs)
+- Cross-platform support for Windows, macOS, and Linux
+- IPC (Inter-Process Communication) between main and renderer processes
+- Native module support for performance-critical operations
+
+**Key implementation details:**
+
+- Main process: `main.js` (1194 lines) handles all system-level operations
+- Custom frameless window with native controls (minimize, maximize, close)
+- Single instance lock to prevent multiple app instances
+- File protocol registration for `.pwn` file associations on Windows
+
+### Next.js frontend
+
+The renderer process is built with **Next.js 16.1.6** and **React 19.2.3**, offering:
+
+- Modern React-based UI with hooks and context API
+- Static export mode for production builds (`next build` outputs to `/renderer/out`)
+- TypeScript support for type-safe development
+- Component-based architecture for maintainability
+
+### Monaco Editor engine
+
+The code editor is powered by **Monaco Editor 0.55.1** (the same engine behind VS Code):
+
+- Advanced syntax highlighting with custom PAWN language support
+- IntelliSense-style code completion
+- Minimap, word wrap, and go-to-line functionality
+- Find and replace with regex support
+- Smooth scrolling and performance optimizations
+
+## Application architecture
+
+### Process model
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Main Process                         │
+│  (main.js - Electron, Node.js runtime)                  │
+│                                                          │
+│  • File system operations (fs, iconv-lite)              │
+│  • Child process management (compiler, server)          │
+│  • Discord RPC integration                               │
+│  • Git operations (spawn git commands)                  │
+│  • Auto-updater (electron-updater)                      │
+│  • IPC message handlers                                  │
+└─────────────────────────────────────────────────────────┘
+                            ↕ IPC
+┌─────────────────────────────────────────────────────────┐
+│                  Renderer Process                        │
+│  (Next.js app - Chromium, isolated context)             │
+│                                                          │
+│  • React UI components                                   │
+│  • Monaco Editor instance                                │
+│  • Context providers (i18n, settings, workspace)        │
+│  • IPC communication via preload.js                     │
+└─────────────────────────────────────────────────────────┘
+```
+
+<Note>
+The main process runs Node.js code with full system access, while the renderer process runs in a sandboxed Chromium environment with `contextIsolation: true` for security.
+</Note>
+
+### IPC communication
+
+All communication between processes happens through Electron's IPC mechanism defined in `preload.js`:
+
+**Main → Renderer channels:**
+- `open-external-file` - Opens files from OS file associations
+- `folder-change` - File system watcher notifications
+- `server-log` - Live server console output
+- `window-state-change` - Window maximize/unmaximize events
+
+**Renderer → Main handlers:**
+- File operations: `dialog-open-file`, `dialog-save-file`, `read-file`
+- Compilation: `compile-file` (spawns pawncc.exe)
+- Git operations: `git-status`, `git-commit`, `git-push`, etc.
+- Server management: `server-start`, `server-stop`, `server-restart`
+- Settings: `get-settings`, `save-settings`
+
+### Key subsystems
+
+#### 1. File encoding system
+
+DAWNO uses **iconv-lite 0.7.2** for comprehensive encoding support:
+
+- Auto-detection of UTF-8 vs legacy encodings (main.js:536-549)
+- Fallback to `windows-1254` (Turkish) for non-UTF-8 files
+- User-configurable default encoding in settings
+- Binary file detection to prevent opening non-text files (main.js:306-313)
+
+#### 2. PAWN compiler integration
+
+Compilation is handled through child process spawning (main.js:411-451):
+
+1. Validates compiler path (`pawncc.exe` existence)
+2. Constructs include path arguments from settings and project structure
+3. Spawns compiler process with proper working directory
+4. Captures stdout/stderr for output display
+5. Supports both compilation and lint-only mode (output to NUL/dev/null)
+
+#### 3. Server manager
+
+Integrated server control for SA-MP and open.mp (main.js:739-834):
+
+- Auto-detection of server executables up to 5 directory levels
+- Process lifecycle management (start, stop, restart)
+- Live console log streaming via IPC
+- Graceful shutdown on app quit
+
+#### 4. Git source control
+
+Native Git integration using spawned `git` CLI commands (main.js:890-1173):
+
+- Full status parsing (staged, unstaged, untracked files)
+- Visual diff generation
+- Commit history with hash and message
+- Branch management and sync status (incoming/outgoing commits)
+- `.gitignore` editor integration
+
+#### 5. Discord Rich Presence
+
+Optional Discord integration using **discord-rpc 4.0.1** (main.js:67-149):
+
+- Auto-reconnect logic with 60-second retry interval
+- Graceful error handling to prevent app crashes
+- Dynamic presence updates (current file, project name)
+- User-toggleable in settings
+
+## Development vs production modes
+
+### Development mode
+
+Triggered by `npm run dev` or `--dev` flag (main.js:193-209):
+
+1. Starts Next.js dev server on port 3000
+2. Hot module replacement for instant UI updates
+3. Attempts ports 3000-3005 with fallback to static build
+4. Loads from `http://localhost:3000`
+
+### Production mode
+
+Built by `npm run build` and `npm run package` (main.js:211-227):
+
+1. Next.js exports static HTML/CSS/JS to `renderer/out`
+2. Custom `file://` protocol handler resolves root-relative paths
+3. All assets bundled with electron-packager
+4. No dev server dependency
+
+## Configuration and settings
+
+Settings are persisted in JSON format at `app.getPath('userData')/settings.json` (main.js:150-174):
+
+```json
+{
+  "compilerPath": "C:/path/to/pawncc.exe",
+  "includePaths": ["C:/pawno/include"],
+  "fontSize": 14,
+  "theme": "dark",
+  "discordRPC": true,
+  "defaultEncoding": "windows-1254"
+}
+```
+
+Project-specific settings stored in `.dawno/config.json` within each workspace (main.js:507-533).
+
+## Security model
+
+<Info>
+DAWNO implements Electron security best practices:
+
+- **Context isolation enabled** (`contextIsolation: true`)
+- **Node integration disabled** in renderer (`nodeIntegration: false`)
+- **Preload script** exposes only whitelisted APIs
+- **No remote code execution** - all code is bundled
+- **Input sanitization** for file paths and git commands
+</Info>
+
+## Performance considerations
+
+### File size limits
+
+DAWNO implements a 5MB file size limit (main.js:315) to prevent memory issues with Monaco Editor.
+
+### Binary file detection
+
+Files are checked for null bytes in the first 8KB to prevent opening binary files as text (main.js:306-313).
+
+### Folder watching
+
+Recursive file system watching with `fs.watch()` for real-time project updates (main.js:490-504).
+
+## Extension points
+
+Future extensibility can be added through:
+
+- **Plugin system** via IPC message routing
+- **Language server protocol** integration for advanced IntelliSense
+- **Custom Monaco themes** through theme JSON files
+- **Additional encoding support** via iconv-lite codec registration

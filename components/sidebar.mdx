@@ -1,0 +1,332 @@
+---
+title: Sidebar
+description: File explorer and source control panel component
+---
+
+The `Sidebar` component provides file system navigation and source control functionality. It displays a hierarchical file tree with support for drag-and-drop, inline file creation, and context menus.
+
+## Overview
+
+The Sidebar component:
+
+- Displays a collapsible folder tree
+- Supports file and folder creation, deletion, and renaming
+- Implements drag-and-drop file moving
+- Switches between Explorer and Source Control panels
+- Tracks file selection and expansion state
+- Watches for file system changes and auto-refreshes
+
+## Props
+
+```typescript
+interface SidebarProps {
+  width: number;
+  onExplorerContextMenu: (x: number, y: number, path: string, isDirectory: boolean) => void;
+  activePanel: 'explorer' | 'sourceControl';
+}
+```
+
+<ParamField path="width" type="number" required>
+  Width of the sidebar in pixels
+</ParamField>
+
+<ParamField path="onExplorerContextMenu" type="function" required>
+  Callback for showing context menu on right-click
+  
+  **Parameters:**
+  - `x: number` - Mouse X position
+  - `y: number` - Mouse Y position
+  - `path: string` - File/folder path
+  - `isDirectory: boolean` - Whether item is a directory
+</ParamField>
+
+<ParamField path="activePanel" type="'explorer' | 'sourceControl'" required>
+  Which panel to display (Explorer or Source Control)
+</ParamField>
+
+## Component structure
+
+```typescript
+export default function Sidebar({ width, onExplorerContextMenu, activePanel }: SidebarProps)
+```
+
+## Key interfaces
+
+### FileTreeItem
+
+```typescript
+interface FileTreeItem {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  children?: FileTreeItem[];
+}
+```
+
+### InlineInputState
+
+```typescript
+type InlineInputState = 
+  | { mode: 'new-file' | 'new-folder'; parentPath: string } 
+  | null;
+```
+
+## Features
+
+### File tree rendering
+
+The component displays a hierarchical file tree:
+
+- Folders are sorted before files
+- Items are sorted alphabetically within their category
+- Expandable folders with chevron indicators
+- Visual file/folder icons
+
+### Click behavior
+
+Smart click detection:
+
+- **Single click**: Select item, open file without focus (allows sidebar navigation)
+- **Double click**: Toggle folder expansion or open file with focus
+
+```typescript
+const handleItemClick = useCallback((item: FileTreeItem) => {
+  setSelectedPath(item.path);
+
+  if (clickTimers.current[item.path]) {
+    // Double click - normal open with focus
+    clearTimeout(clickTimers.current[item.path]);
+    delete clickTimers.current[item.path];
+    if (item.isDirectory) {
+      toggleFolder(item.path);
+    } else {
+      openFileByPath(item.path);
+    }
+  } else {
+    // Single click – select and open WITHOUT focus
+    if (item.isDirectory) {
+      toggleFolder(item.path);
+    } else {
+      shouldPreventFocus.current = true;
+      openFileByPath(item.path);
+    }
+
+    clickTimers.current[item.path] = setTimeout(() => {
+      delete clickTimers.current[item.path];
+    }, 300);
+  }
+}, [openFileByPath, shouldPreventFocus]);
+```
+
+### Drag and drop
+
+File/folder moving via drag and drop:
+
+1. **Drag start**: Store dragged item path
+2. **Drag over**: Highlight valid drop targets (directories)
+3. **Drop**: Move file/folder to target directory
+
+```typescript
+const handleDrop = useCallback(async (e: React.DragEvent, item: FileTreeItem) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setDragOverPath(null);
+  
+  const src = draggedPath.current;
+  draggedPath.current = null;
+  if (!src || src === item.path) return;
+
+  // Target must be a directory
+  const targetDir = item.isDirectory 
+    ? item.path 
+    : item.path.split(/[\\/]/).slice(0, -1).join('\\');
+  
+  const fileName = src.split(/[\\/]/).pop()!;
+  const dest = `${targetDir}\\${fileName}`;
+  if (src === dest) return;
+
+  const res = await window.api.moveFile({ src, dest });
+  if (!res.success) {
+    appendOutput(`Error moving: ${res.error}`, 'error');
+  } else {
+    setRefreshKey(prev => prev + 1);
+  }
+}, [appendOutput]);
+```
+
+### Inline file creation
+
+Create new files/folders with inline input:
+
+```typescript
+const handleNewFile = async () => {
+  if (!currentFolderPath || !window.api) return;
+  let parent = currentFolderPath;
+  
+  if (selectedPath) {
+    const stats = await window.api.getStats(selectedPath);
+    if (stats.isDirectory) {
+      parent = selectedPath;
+    } else {
+      parent = selectedPath.split(/[\\/]/).slice(0, -1).join('\\');
+    }
+  }
+  
+  setInlineInput({ mode: 'new-file', parentPath: parent });
+};
+```
+
+### Auto-refresh
+
+Automatically refreshes when file system changes are detected:
+
+```typescript
+useEffect(() => {
+  if (!window.api) return;
+  const cleanup = window.api.onFolderChange(() => {
+    setRefreshKey(prev => prev + 1);
+  });
+  return () => {
+    if (typeof cleanup === 'function') cleanup();
+  };
+}, []);
+```
+
+## Toolbar actions
+
+The sidebar header includes action buttons:
+
+<Tabs>
+  <Tab title="New File">
+    Creates a new file in the selected directory or root folder
+    
+    ```tsx
+    <button className="sidebar-action-btn" title="New File" onClick={handleNewFile}>
+      <svg>...</svg>
+    </button>
+    ```
+  </Tab>
+  
+  <Tab title="New Folder">
+    Creates a new folder in the selected directory or root folder
+    
+    ```tsx
+    <button className="sidebar-action-btn" title="New Folder" onClick={handleNewFolder}>
+      <svg>...</svg>
+    </button>
+    ```
+  </Tab>
+  
+  <Tab title="Refresh">
+    Manually refreshes the file tree
+    
+    ```tsx
+    <button className="sidebar-action-btn" title="Refresh" onClick={() => setRefreshKey(k => k + 1)}>
+      <svg>...</svg>
+    </button>
+    ```
+  </Tab>
+  
+  <Tab title="Close Folder">
+    Closes the current folder
+    
+    ```tsx
+    <button className="sidebar-action-btn" title="Close Folder" onClick={() => setCurrentFolderPath(null)}>
+      <svg>...</svg>
+    </button>
+    ```
+  </Tab>
+</Tabs>
+
+## SubTree component
+
+The `SubTree` internal component handles recursive folder rendering:
+
+- Loads directory contents on demand
+- Implements the same click and drag-drop behavior
+- Recursively renders nested folders
+- Maintains consistent styling and indentation
+
+```typescript
+function SubTree({ 
+  path, 
+  level, 
+  toggleFolder, 
+  expandedFolders, 
+  selectedPath, 
+  setSelectedPath, 
+  openFileByPath, 
+  onContextMenu, 
+  refreshKey, 
+  dragOverPath, 
+  onDragStart, 
+  onDragOver, 
+  onDragLeave, 
+  onDrop, 
+  onDragEnd, 
+  shouldPreventFocus 
+}: any)
+```
+
+## Usage example
+
+```tsx
+import Sidebar from './components/Sidebar';
+import { useState } from 'react';
+
+function App() {
+  const [activePanel, setActivePanel] = useState<'explorer' | 'sourceControl'>('explorer');
+  
+  const handleContextMenu = (x: number, y: number, path: string, isDirectory: boolean) => {
+    // Show context menu
+  };
+  
+  return (
+    <Sidebar
+      width={250}
+      onExplorerContextMenu={handleContextMenu}
+      activePanel={activePanel}
+    />
+  );
+}
+```
+
+## Panel switching
+
+The sidebar switches between two panels:
+
+```tsx
+{activePanel === 'sourceControl' ? (
+  <div className="sidebar" style={{ width: `${width}px` }}>
+    <SourceControlPanel />
+  </div>
+) : (
+  // Explorer panel
+)}
+```
+
+## Styling classes
+
+- `.sidebar` - Main sidebar container
+- `.sidebar-header` - Header with title and actions
+- `.sidebar-actions` - Action button container
+- `.sidebar-action-btn` - Individual action button
+- `.sidebar-content` - Scrollable content area
+- `.sidebar-placeholder` - Empty state when no folder is open
+- `.tree-item` - Individual file/folder item
+- `.tree-item.selected` - Selected item highlight
+- `.tree-item.drag-over` - Drag-over visual feedback
+- `.chevron` - Folder expand/collapse icon
+- `.chevron.expanded` - Rotated chevron for expanded folders
+- `.folder-icon` - Folder icon
+- `.file-icon` - File icon
+
+## Related components
+
+- [Git integration](/guide/git-integration) - Git source control features
+- [File management](/guide/file-management) - File operations guide
+- [Component overview](/components/overview) - Architecture and state management
+
+<Note>
+  The sidebar uses `shouldPreventFocus.current = true` on single-click file opens to keep focus in the sidebar, allowing rapid file browsing without losing navigation context.
+</Note>

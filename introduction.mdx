@@ -1,0 +1,162 @@
+---
+title: Introduction
+description: DAWNO is a modern, performance-oriented PAWN code editor designed specifically for SA-MP and open.mp developers
+---
+
+# Welcome to DAWNO
+
+DAWNO is a modern, performance-oriented PAWN code editor designed specifically for SA-MP (San Andreas Multiplayer) and open.mp developers. It serves as a modern alternative to the classic Pawno editor, built using Next.js, Electron, and Monaco Editor technologies.
+
+## Why DAWNO?
+
+Traditional PAWN editing can be cumbersome with outdated tools. DAWNO bridges this gap by providing a professional environment that mirrors the functionality and aesthetics of modern code editors like Visual Studio Code, while maintaining a lightweight footprint tailored for San Andreas modding.
+
+<CardGroup cols={2}>
+  <Card title="Get started" icon="rocket" href="/installation">
+    Install DAWNO and set up your development environment in minutes
+  </Card>
+  <Card title="Quick start guide" icon="bolt" href="/quickstart">
+    Learn the basics and start editing PAWN code right away
+  </Card>
+  <Card title="Advanced features" icon="code" href="/features/monaco-editor">
+    Explore Git integration, server manager, and Discord Rich Presence
+  </Card>
+  <Card title="Customization" icon="sliders" href="/configuration/settings">
+    Configure editor settings, compiler paths, and language preferences
+  </Card>
+</CardGroup>
+
+## Key features
+
+### Modern editing experience
+
+DAWNO leverages the Monaco Editor engine (the same editor that powers Visual Studio Code) to provide a premium editing experience with intelligent code completion, syntax highlighting, and smooth scrolling.
+
+```pawn
+public OnPlayerConnect(playerid)
+{
+    new playerName[MAX_PLAYER_NAME];
+    GetPlayerName(playerid, playerName, sizeof(playerName));
+    
+    new string[128];
+    format(string, sizeof(string), "Welcome %s to the server!", playerName);
+    SendClientMessage(playerid, 0x00FF00FF, string);
+    
+    return 1;
+}
+```
+
+### Advanced Monaco editor
+
+- **Syntax highlighting** for PAWN language with full SA-MP/open.mp native support
+- **Intelligent code completion** with function signatures and documentation
+- **Find & replace** with regex support
+- **Minimap** for quick code navigation
+- **Word wrap** and customizable font sizes
+- **Go to line** functionality
+- **Smooth scrolling** and performance-optimized rendering
+
+### Git source control GUI
+
+Complete native Git integration allowing you to:
+
+- Stage, commit, push, and pull changes
+- Discard changes and view visual diffs
+- Manage your `.gitignore` directly from the sidebar
+- Track incoming and outgoing commits
+- Stash and pop changes
+
+<Note>
+Git integration is automatically enabled when you open a folder containing a Git repository.
+</Note>
+
+### Integrated server manager
+
+Control your SA-MP or open.mp server directly from the editor:
+
+- Automatic detection of server executables (`samp-server.exe`, `omp-server.exe`)
+- Start, stop, and restart capabilities
+- Live console log tracking
+- Deep scanning up to 4 directory levels to find server files
+
+### Auto-save functionality
+
+Configurable auto-save with customizable delay ensures you never lose your work. The default delay is 1000ms and can be adjusted in preferences.
+
+### Configuration editor
+
+A dedicated table-based interface for managing server settings without manual text editing:
+
+- Edit `server.cfg` and `config.json` files visually
+- Add, modify, and remove configuration entries
+- Automatic parsing of key-value pairs
+- Save changes with validation
+
+### Encoding support
+
+Comprehensive character encoding support including:
+
+- UTF-8 (default)
+- Windows-1254 (Turkish)
+- Multiple regional encodings
+- Instant encoding switching
+- Automatic binary file detection
+
+<Warning>
+Files larger than 5MB cannot be opened in the editor for performance reasons.
+</Warning>
+
+### Discord Rich Presence
+
+Automatically updates your Discord status to show:
+
+- Which project you are currently working on
+- The file you are editing
+- Your current development session
+
+<Note>
+Discord Rich Presence can be enabled or disabled in the integration settings.
+</Note>
+
+### Multilingual support
+
+Built-in internationalization (i18n) natively supporting 13 languages:
+
+<CardGroup cols={3}>
+  <Card icon="flag">English</Card>
+  <Card icon="flag">Turkish</Card>
+  <Card icon="flag">German</Card>
+  <Card icon="flag">Arabic</Card>
+  <Card icon="flag">Spanish</Card>
+  <Card icon="flag">French</Card>
+  <Card icon="flag">Italian</Card>
+  <Card icon="flag">Japanese</Card>
+  <Card icon="flag">Korean</Card>
+  <Card icon="flag">Portuguese</Card>
+  <Card icon="flag">Russian</Card>
+  <Card icon="flag">Vietnamese</Card>
+  <Card icon="flag">Chinese</Card>
+</CardGroup>
+
+## Technology stack
+
+DAWNO is built with modern web technologies:
+
+- **Core framework**: Next.js (React)
+- **Desktop shell**: Electron
+- **Editor engine**: Monaco Editor
+- **Encoding**: iconv-lite
+- **Build system**: Electron Packager and Inno Setup
+- **Source control**: Native Git integration
+- **RPC**: Discord RPC
+
+## What's next?
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Get DAWNO installed on your system
+  </Card>
+  <Card title="Quick start" icon="play" href="/quickstart">
+    Start editing PAWN code in minutes
+  </Card>
+</CardGroup>
